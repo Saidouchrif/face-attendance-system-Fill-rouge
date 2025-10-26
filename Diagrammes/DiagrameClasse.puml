@@ -1,0 +1,28 @@
+@startuml
+class Employe {
+  +id: UUID
+  +nom: String
+  +email: String
+  +poste: String
+  +photo_ref_path: String
+}
+class Presence {
+  +id: UUID
+  +type: String
+  +timestamp: DateTime
+}
+class Admin {
+  +id: UUID
+  +email: String
+  +password_hash: String
+}
+class Rapport {
+  +id: UUID
+  +periode_type: String
+  +date_debut: Date
+  +date_fin: Date
+}
+
+Employe "1" -- "0..*" Presence : enregistre
+Admin "1" -- "0..*" Rapport : génère
+@enduml
