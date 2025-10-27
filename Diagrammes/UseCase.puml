@@ -1,0 +1,26 @@
+@startuml
+left to right direction
+actor Employe as E
+actor Admin as A
+actor "Mail Service" as M
+rectangle "Système Gestion Présence" {
+  usecase "UC1: Face ID Pointage" as UC1
+  usecase "UC2: Confirmation Pointage" as UC2
+  usecase "UC3: Login Admin (JWT)" as UC3
+  usecase "UC4: Gérer Employés" as UC4
+  usecase "UC5: Consulter Présences" as UC5
+  usecase "UC6: Voir Statistiques" as UC6
+  usecase "UC7: Générer Rapport" as UC7
+  usecase "UC8: Envoi Auto Rapport" as UC8
+  usecase "UC10: Droit à l’oubli (Suppression Biométrie)" as UC10
+}
+E --> UC1
+E --> UC2
+A --> UC3
+A --> UC4
+A --> UC5
+A --> UC6
+A --> UC7
+UC8 --> M
+A --> UC10
+@enduml
