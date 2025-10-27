@@ -1,0 +1,14 @@
+@startuml
+actor Employe
+participant "Caméra/Client" as Cam
+participant "API FastAPI" as API
+database "DB" as DB
+
+Employe -> Cam : Démarrer reconnaissance
+Cam -> API : Envoyer image visage
+API -> DB : Rechercher employé correspondant
+DB --> API : Retourne identité
+API -> DB : Enregistrer présence (entrée/sortie)
+API --> Cam : Confirmation succès
+Cam --> Employe : Message affiché
+@enduml
