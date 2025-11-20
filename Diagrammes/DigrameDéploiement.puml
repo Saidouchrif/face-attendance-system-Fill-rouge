@@ -1,0 +1,19 @@
+@startuml
+node "Client (Browser/App)" {
+  component "Interface Employé"
+  component "Caméra"
+}
+node "Serveur Application" {
+  component "FastAPI + IA (OpenCV)"
+}
+node "Base de Données" {
+  database "PostgreSQL"
+}
+node "Service Email" {
+  component "SMTP/SendGrid"
+}
+
+"Interface Employé" --> "FastAPI + IA (OpenCV)"
+"FastAPI + IA (OpenCV)" --> "PostgreSQL"
+"FastAPI + IA (OpenCV)" --> "SMTP/SendGrid"
+@enduml

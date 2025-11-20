@@ -1,0 +1,17 @@
+@startuml
+start
+:Ouvrir caméra;
+:Capturer visage;
+if (Visage détecté ?) then (oui)
+  :Comparer avec base;
+  if (Correspondance trouvée ?) then (oui)
+    :Enregistrer présence;
+    :Afficher "Pointage réussi";
+  else (non)
+    :Afficher "Visage non reconnu";
+  endif
+else (non)
+  :Afficher "Aucun visage détecté";
+endif
+stop
+@enduml
