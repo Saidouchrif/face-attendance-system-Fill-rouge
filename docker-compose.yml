@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: fastapi_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend/app:/app/app
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: react_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: gestion_presence
+      MYSQL_USER: gp_user
+      MYSQL_PASSWORD: gp_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_panel
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
