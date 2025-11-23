@@ -1,16 +1,16 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
 import socket
 
-# Chargement des variables d'environnement
+# Load .env
 if os.path.exists(".env.local"):
     load_dotenv(".env.local")
 elif os.path.exists(".env"):
     load_dotenv(".env")
 
-# Détection Docker : vérifie si le hostname 'db' est résolvable
+# Detect Docker
 def is_docker():
     try:
         socket.gethostbyname("db")
@@ -18,25 +18,51 @@ def is_docker():
     except:
         return False
 
-# Construction de l'URL de base de données
 db_host = "db" if is_docker() else "127.0.0.1"
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/gestion_presence"
-)
 
+# Main URL (with DB)
+DATABASE_URL = f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/gestion_presence"
+
+# URL WITHOUT database (for creation)
+DATABASE_URL_NO_DB = f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/"
+
+# Create DB if not exists
+def create_database_if_not_exists():
+    print("🔎 Vérification de la base...")
+
+    temp_engine = create_engine(
+        DATABASE_URL_NO_DB,
+        echo=True,
+        isolation_level="AUTOCOMMIT"
+    )
+
+    with temp_engine.connect() as conn:
+        result = conn.execute(text("SHOW DATABASES LIKE 'gestion_presence'"))
+        if not result.fetchone():
+            print("📌 Base absente → création…")
+            conn.execute(text(
+                "CREATE DATABASE gestion_presence CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+            ))
+            print("✅ Base créée")
+        else:
+            print("✔ Base déjà existante")
+
+    temp_engine.dispose()
+
+# MUST RUN BEFORE ENGINE
+create_database_if_not_exists()
+
+# Final engine
 engine = create_engine(
     DATABASE_URL,
-    echo=True,         
-    pool_pre_ping=True   
+    echo=True,
+    pool_pre_ping=True
 )
 
-# Session
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
-# Base des modèles
 Base = declarative_base()
