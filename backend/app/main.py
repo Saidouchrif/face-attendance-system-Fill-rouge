@@ -1,15 +1,21 @@
-# backend/app/main.py
+# app/main.py
 from fastapi import FastAPI
 from app.db.session import engine, Base
-import app.db.base  
+from app.api.routes.routes import router as api_router
+import app.db.base # Ensures all models are imported
+app = FastAPI(title="Face Attendance System - Backend")
 
-app = FastAPI()
 
 @app.on_event("startup")
-def startup_event():
-    print("🔎 Vérification / création des tables...")
+def on_startup():
+    print("🔎 Vérification des tables...")
     Base.metadata.create_all(bind=engine)
-    print("✅ Tables OK !")
+    print("✅ Tables ok")
+
+
+# Inclure tous les routers
+app.include_router(api_router)
+
 
 @app.get("/health")
 def health_check():

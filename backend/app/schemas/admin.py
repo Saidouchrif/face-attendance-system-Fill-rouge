@@ -1,19 +1,23 @@
+# app/schemas/admin.py
+from datetime import datetime
 from pydantic import BaseModel, EmailStr
 
+
 class AdminBase(BaseModel):
-    username: str
+    nom: str
     email: EmailStr
+    is_active: bool = True
+
 
 class AdminCreate(AdminBase):
     password: str
 
-class AdminUpdate(BaseModel):
-    username: str | None = None
-    email: EmailStr | None = None
-    password: str | None = None
 
-class AdminOut(AdminBase):
+class AdminRead(AdminBase):
     id: int
+    last_login: datetime | None = None
+    created_at: datetime
+    updated_at: datetime | None = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
