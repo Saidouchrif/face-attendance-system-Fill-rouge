@@ -6,6 +6,7 @@ import {
   getCurrentAdmin,
   fetchProtectedResource,
 } from '../services/authService';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // Simple Dashboard page. Protected by ProtectedRoute.
 // Shows "Welcome Admin" and demonstrates using token in protected calls.
@@ -14,6 +15,7 @@ const Dashboard = () => {
   const [admin, setAdmin] = useState(getStoredAdmin());
   const [protectedMessage, setProtectedMessage] = useState('');
   const [error, setError] = useState('');
+  usePageTitle('Tableau de bord');
 
   // Load current admin info from backend (validates token)
   useEffect(() => {
