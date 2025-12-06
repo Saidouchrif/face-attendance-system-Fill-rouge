@@ -46,7 +46,7 @@ const AdminLayout = ({ children }) => {
     { path: '/dashboard', label: 'Tableau de bord', icon: <HomeIcon /> },
     { path: '/employees', label: 'Gestion des employés', icon: <UsersIcon /> },
     { path: '/presences', label: 'Présences', icon: <CalendarIcon /> },
-    { path: '/captures', label: 'Captures faciales', icon: <CameraIcon /> },
+    { path: '/face-punch', label: 'Captures Faciales', icon: <CameraIcon /> },
   ];
 
   const handleLogout = () => {
@@ -58,94 +58,153 @@ const AdminLayout = ({ children }) => {
   const adminName = getStoredAdmin()?.name || 'Admin';
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
-      {/* Sidebar - Hidden on mobile, shown on larger screens */}
-      <aside className={`fixed lg:relative lg:flex lg:w-64 bg-slate-900 shadow-xl h-screen z-20 transform transition-transform duration-300 ease-in-out ${
-        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
-        <div className="h-full flex flex-col">
-          {/* Logo section */}
-          <div className="p-4 lg:p-6 border-b border-slate-800">
-            <div className="flex items-center space-x-3">
-              <img
-                src={logo2}
-                alt="Logo"
-                className="h-8 lg:h-10 w-auto object-contain"
-              />
-              <div>
-                <h2 className="text-white font-semibold text-base lg:text-lg">Système</h2>
-                <p className="text-slate-400 text-xs">de Présence</p>
-              </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Fixed Sidebar - 240px width, hidden on mobile */}
+      <aside className={`hidden lg:flex fixed left-0 top-0 h-screen w-[240px] bg-slate-900 shadow-2xl z-30 flex-col`}>
+        {/* Logo section */}
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex items-center space-x-3">
+            <img
+              src={logo2}
+              alt="Logo"
+              className="h-10 w-auto object-contain"
+            />
+            <div>
+              <h2 className="text-white font-bold text-lg">Système</h2>
+              <p className="text-slate-400 text-xs">de Présence</p>
             </div>
           </div>
+        </div>
 
-          {/* Admin info */}
-          <div className="p-3 lg:p-4 border-b border-slate-800">
-            <p className="text-slate-300 text-xs lg:text-sm">Bienvenue,</p>
-            <p className="text-white font-medium text-sm lg:text-base truncate">{adminName}</p>
-          </div>
+        {/* Admin info */}
+        <div className="px-6 py-4 border-b border-slate-800 bg-slate-800/50">
+          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Bienvenue</p>
+          <p className="text-white font-semibold text-base truncate">{adminName}</p>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
-            <ul className="space-y-1 lg:space-y-2">
-              {navItems.map((item) => (
-                <li key={item.path}>
-                  <button
-                    onClick={() => {
-                      navigate(item.path);
-                      setMobileMenuOpen(false); // Close mobile menu after navigation
-                    }}
-                    className={`w-full flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-lg transition-colors ${
-                      location.pathname === item.path
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <span className="flex-shrink-0">{item.icon}</span>
-                    <span className="text-xs lg:text-sm font-medium truncate">{item.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </nav>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <ul className="space-y-2">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <button
+                  onClick={() => navigate(item.path)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    location.pathname === item.path
+                      ? 'bg-slate-800 text-white shadow-lg'
+                      : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-          {/* Logout */}
-          <div className="p-3 lg:p-4 border-t border-slate-800">
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="w-full flex items-center justify-center space-x-2 px-3 lg:px-4 py-2 lg:py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <LogoutIcon />
-              <span className="text-xs lg:text-sm font-medium">Déconnexion</span>
-            </button>
-          </div>
+        {/* Logout */}
+        <div className="p-4 border-t border-slate-800">
+          <button
+            onClick={handleLogout}
+            disabled={loading}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors disabled:opacity-50 font-medium"
+          >
+            <LogoutIcon />
+            <span className="text-sm">Déconnexion</span>
+          </button>
         </div>
       </aside>
 
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-30">
+      <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="bg-slate-900 text-white p-2 rounded-lg shadow-lg"
+          className="bg-slate-900 text-white p-3 rounded-lg shadow-lg"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            {mobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
           </svg>
         </button>
       </div>
 
+      {/* Mobile Sidebar */}
+      <aside className={`lg:hidden fixed left-0 top-0 h-screen w-[240px] bg-slate-900 shadow-2xl z-40 flex-col transform transition-transform duration-300 ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* Logo section */}
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex items-center space-x-3">
+            <img
+              src={logo2}
+              alt="Logo"
+              className="h-10 w-auto object-contain"
+            />
+            <div>
+              <h2 className="text-white font-bold text-lg">Système</h2>
+              <p className="text-slate-400 text-xs">de Présence</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin info */}
+        <div className="px-6 py-4 border-b border-slate-800 bg-slate-800/50">
+          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Bienvenue</p>
+          <p className="text-white font-semibold text-base truncate">{adminName}</p>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <ul className="space-y-2">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <button
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    location.pathname === item.path
+                      ? 'bg-slate-800 text-white shadow-lg'
+                      : 'text-slate-200 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Logout */}
+        <div className="p-4 border-t border-slate-800">
+          <button
+            onClick={handleLogout}
+            disabled={loading}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors disabled:opacity-50 font-medium"
+          >
+            <LogoutIcon />
+            <span className="text-sm">Déconnexion</span>
+          </button>
+        </div>
+      </aside>
+
       {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+          className="lg:hidden fixed inset-0 bg-black/60 z-30"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto lg:ml-0">
-        <div className="p-4 lg:p-8">
+      {/* Main content - Add left padding for sidebar on desktop */}
+      <main className="min-h-screen lg:pl-[240px] bg-slate-50">
+        <div className="overflow-y-auto">
           {children}
         </div>
       </main>
