@@ -1,16 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { isAuthenticated } from '../services/authService';
+import { getToken } from '../services/authService';
+import AdminLayout from './AdminLayout';
 
-// ProtectedRoute acts as an AuthGuard to protect private routes
 const ProtectedRoute = () => {
-  const authenticated = isAuthenticated();
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
 
-  if (!authenticated) {
-    return <Navigate to="/login" replace />;
+  useEffect(() => {
+    // نتاكد من التوكن مرة وحدة فقط
+    const token = getToken();
+    console.log("ProtectedRoute: checking token", !!token);
+
+    if (token) {
+      console.log("ProtectedRoute: token found, allowing access");
+      setAllowed(true);
+    } else {
+      console.log("ProtectedRoute: no token, redirecting to login");
+      setAllowed(false);
+    }
+
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return <div className="text-center text-white p-10">Loading...</div>;
   }
 
-  return <Outlet />;
+  return allowed ? <AdminLayout><Outlet /></AdminLayout> : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;
