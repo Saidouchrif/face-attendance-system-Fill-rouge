@@ -1,48 +1,65 @@
-# app/services/face_training_service.py
-import cv2, os, uuid, face_recognition
-from app.db.session import SessionLocal
-from app.models.face_template import FaceTemplate
-from app.models.employee import Employe
+import os
+import uuid
+import cv2
 import numpy as np
+from datetime import datetime
+from deepface import DeepFace
+from app.models.face_template import FaceTemplate
+from app.db.session import SessionLocal
 
-SAVE_DIR = "storage/faces"
+STORAGE_DIR = "storage/face_data"
 
-os.makedirs(SAVE_DIR, exist_ok=True)
 
-def save_sample(employe_id: int, img):
-    session = SessionLocal()
+def save_sample(employe_id: int, img_bgr):
 
-    # 1. استخراج encoding
-    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    encodings = face_recognition.face_encodings(rgb_img)
+    # ------------------ 0) Ensure storage folder exists ------------------
+    os.makedirs(STORAGE_DIR, exist_ok=True)
 
-    if len(encodings) == 0:
-        return False, "Face not detected"
+    # ------------------ 1) Save image locally ----------------------------
+    img_name = f"{uuid.uuid4()}.jpg"
+    img_path = os.path.join(STORAGE_DIR, img_name)
+    cv2.imwrite(img_path, img_bgr)
 
-    encoding = encodings[0]
+    # ------------------ 2) Extract embedding using DeepFace --------------
+    try:
+        result = DeepFace.represent(
+            img_path=img_path,
+            model_name="Facenet",
+            enforce_detection=False
+        )
+        embedding = result[0]["embedding"]
 
-    # 2. حفظ الصورة
-    filename = f"{uuid.uuid4()}.jpg"
-    filepath = os.path.join(SAVE_DIR, filename)
-    cv2.imwrite(filepath, img)
+    except Exception as e:
+        return False, f"Face embedding error: {str(e)}"
 
-    # 3. حفظ encoding
-    encoding_path = filepath.replace(".jpg", ".npy")
-    np.save(encoding_path, encoding)
+    # ------------------ 3) Save embedding vector in .npy -----------------
+    enc_name = f"{uuid.uuid4()}.npy"
+    enc_path = os.path.join(STORAGE_DIR, enc_name)
 
-    # 4. تخزين DB
-    template = FaceTemplate(
-        employe_id=employe_id,
-        image_path=filepath,
-        encoding_path=encoding_path
-    )
-    session.add(template)
+    np.save(enc_path, np.array(embedding))
 
-    # 5. تحديث employee
-    emp = session.query(Employe).get(employe_id)
-    emp.has_face_profile = True
-    emp.face_samples_count += 1
+    # ------------------ 4) Store record in database ----------------------
+    db = SessionLocal()
 
-    session.commit()
+    try:
+        tmpl = FaceTemplate(
+            employe_id=employe_id,
+            image_path=img_path,
+            encoding_path=enc_path,
+            type="training",
+            is_active=True,
+            created_at=datetime.utcnow()
+        )
 
-    return True, "Sample saved successfully"
+        db.add(tmpl)
+        db.commit()
+        db.refresh(tmpl)
+
+        return True, "Sample saved successfully"
+
+    except Exception as e:
+        db.rollback()
+        return False, f"Database error: {str(e)}"
+
+    finally:
+        db.close()
