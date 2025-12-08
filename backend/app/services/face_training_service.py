@@ -8,20 +8,32 @@ from app.models.face_template import FaceTemplate
 from app.models.employee import Employe
 from app.db.session import SessionLocal
 
-STORAGE_DIR = "storage/face_data"
+BASE_DIR = "storage/face_data"
 
 
 def save_sample(employe_id: int, img_bgr):
 
-    # ------------------ 0) Ensure storage folder exists ------------------
-    os.makedirs(STORAGE_DIR, exist_ok=True)
+    db = SessionLocal()
 
-    # ------------------ 1) Save image locally ----------------------------
+    # ------------------ 0) Get employee info ------------------
+    emp = db.query(Employe).filter(Employe.id == employe_id).first()
+    if not emp:
+        db.close()
+        return False, "Employee not found"
+
+    # Folder name format: First_Last (no spaces)
+    folder_name = f"{emp.first_name}_{emp.last_name}".replace(" ", "")
+    employee_dir = os.path.join(BASE_DIR, folder_name)
+
+    # Create employee directory if not exists
+    os.makedirs(employee_dir, exist_ok=True)
+
+    # ------------------ 1) Save image -------------------------
     img_name = f"{uuid.uuid4()}.jpg"
-    img_path = os.path.join(STORAGE_DIR, img_name)
+    img_path = os.path.join(employee_dir, img_name)
     cv2.imwrite(img_path, img_bgr)
 
-    # ------------------ 2) Extract embedding using DeepFace --------------
+    # ------------------ 2) Extract embedding ------------------
     try:
         result = DeepFace.represent(
             img_path=img_path,
@@ -31,19 +43,16 @@ def save_sample(employe_id: int, img_bgr):
         embedding = result[0]["embedding"]
 
     except Exception as e:
+        db.close()
         return False, f"Face embedding error: {str(e)}"
 
-    # ------------------ 3) Save embedding vector in .npy -----------------
+    # ------------------ 3) Save embedding (.npy) --------------
     enc_name = f"{uuid.uuid4()}.npy"
-    enc_path = os.path.join(STORAGE_DIR, enc_name)
-
+    enc_path = os.path.join(employee_dir, enc_name)
     np.save(enc_path, np.array(embedding))
 
-    # ------------------ 4) Store record in database ----------------------
-    db = SessionLocal()
-
+    # ------------------ 4) Insert into DB ---------------------
     try:
-        # Insert template
         tmpl = FaceTemplate(
             employe_id=employe_id,
             image_path=img_path,
@@ -55,13 +64,10 @@ def save_sample(employe_id: int, img_bgr):
 
         db.add(tmpl)
 
-        # ------------------ 5) Update employee profile --------------------
-        emp = db.query(Employe).filter(Employe.id == employe_id).first()
-
-        if emp:
-            emp.has_face_profile = 1
-            emp.face_samples_count = (emp.face_samples_count or 0) + 1
-            emp.last_face_training_at = datetime.utcnow()
+        # Update employee stats
+        emp.has_face_profile = 1
+        emp.face_samples_count = (emp.face_samples_count or 0) + 1
+        emp.last_face_training_at = datetime.utcnow()
 
         db.commit()
         db.refresh(tmpl)
