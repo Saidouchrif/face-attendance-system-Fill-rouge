@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime
 from deepface import DeepFace
 from app.models.face_template import FaceTemplate
+from app.models.employee import Employe
 from app.db.session import SessionLocal
 
 STORAGE_DIR = "storage/face_data"
@@ -42,6 +43,7 @@ def save_sample(employe_id: int, img_bgr):
     db = SessionLocal()
 
     try:
+        # Insert template
         tmpl = FaceTemplate(
             employe_id=employe_id,
             image_path=img_path,
@@ -52,6 +54,15 @@ def save_sample(employe_id: int, img_bgr):
         )
 
         db.add(tmpl)
+
+        # ------------------ 5) Update employee profile --------------------
+        emp = db.query(Employe).filter(Employe.id == employe_id).first()
+
+        if emp:
+            emp.has_face_profile = 1
+            emp.face_samples_count = (emp.face_samples_count or 0) + 1
+            emp.last_face_training_at = datetime.utcnow()
+
         db.commit()
         db.refresh(tmpl)
 
