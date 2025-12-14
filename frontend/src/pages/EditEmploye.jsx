@@ -135,23 +135,28 @@ export default function EditEmploye() {
             {/* Grid layout for form fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               
-              {/* Matricule */}
+              {/* Matricule - Read Only */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center space-x-2">
                   <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
                   </svg>
                   <span>Matricule</span>
-                  <span className="text-red-500">*</span>
+                  <span className="ml-2 px-2 py-0.5 bg-slate-200 text-slate-600 text-xs rounded-full font-semibold">Non modifiable</span>
                 </label>
                 <input
                   name="matricule"
                   value={form.matricule}
-                  onChange={handleChange}
-                  placeholder="Ex: EMP001"
-                  required
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all outline-none text-slate-900 font-medium"
+                  readOnly
+                  disabled
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-100 text-slate-600 font-medium cursor-not-allowed"
                 />
+                <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Le matricule ne peut pas être modifié après la création</span>
+                </p>
               </div>
 
               {/* Prénom */}

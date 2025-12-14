@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function Presence() {
   const navigate = useNavigate();
@@ -7,6 +10,7 @@ export default function Presence() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, present, late, out_of_hours
+  const [dateFilter, setDateFilter] = useState(''); // Date filter
 
   useEffect(() => {
     loadPresences();
@@ -40,12 +44,71 @@ export default function Presence() {
   }
 
   const filteredPresences = presences.filter(p => {
-    if (filter === 'all') return true;
-    if (filter === 'present') return p.status === 'present';
-    if (filter === 'late') return p.status === 'late';
-    if (filter === 'out_of_hours') return p.status === 'out_of_hours';
-    return true;
+    // Filter by status
+    let statusMatch = true;
+    if (filter === 'present') statusMatch = p.status === 'present';
+    else if (filter === 'late') statusMatch = p.status === 'late';
+    else if (filter === 'out_of_hours') statusMatch = p.status === 'out_of_hours';
+    
+    // Filter by date
+    let dateMatch = true;
+    if (dateFilter) {
+      dateMatch = p.date === dateFilter;
+    }
+    
+    return statusMatch && dateMatch;
   });
+
+  // Export to PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text('Liste des présences', 14, 15);
+    
+    // Prepare table data
+    const tableColumn = ['Date', 'Employé', 'Matricule', 'Poste', 'Entrée', 'Sortie', 'Statut', 'Confiance'];
+    const tableRows = filteredPresences.map(p => [
+      p.date || '',
+      `${p.employee.first_name} ${p.employee.last_name}`,
+      p.employee.matricule || '',
+      p.employee.poste || '',
+      p.check_in_time || '-',
+      p.check_out_time || '-',
+      p.status || '',
+      p.confidence ? `${p.confidence}%` : '-'
+    ]);
+
+    // Generate table with correct syntax
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 25,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    doc.save('presences.pdf');
+  };
+
+  // Export to Excel
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(filteredPresences.map(p => ({
+      'Date': p.date || '',
+      'Employé': `${p.employee.first_name} ${p.employee.last_name}`,
+      'Matricule': p.employee.matricule || '',
+      'Poste': p.employee.poste || '',
+      'Heure d\'entrée': p.check_in_time || '-',
+      'Heure de sortie': p.check_out_time || '-',
+      'Statut': p.status || '',
+      'Confiance': p.confidence ? `${p.confidence}%` : '-'
+    })));
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Presences');
+    XLSX.writeFile(workbook, 'presences.xlsx');
+  };
 
   const getStatusBadge = (status) => {
     if (status === 'present') {
@@ -135,10 +198,51 @@ export default function Presence() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters and Export Buttons */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-semibold text-slate-700">Filtrer par date:</span>
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {dateFilter && (
+                <button
+                  onClick={() => setDateFilter('')}
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Réinitialiser
+                </button>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={exportToPDF}
+                disabled={filteredPresences.length === 0}
+                className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span>Exporter PDF</span>
+              </button>
+              <button
+                onClick={exportToExcel}
+                disabled={filteredPresences.length === 0}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm font-medium hover:from-green-600 hover:to-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v1a1 1 0 001 1h4a1 1 0 001-1v-1m3-4V8a2 2 0 00-2-2H8a2 2 0 00-2 2v8m5-4h4" />
+                </svg>
+                <span>Exporter Excel</span>
+              </button>
+            </div>
+          </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm font-semibold text-slate-700">Filtrer par:</span>
+            <span className="text-sm font-semibold text-slate-700">Filtrer par statut:</span>
             <div className="flex space-x-2">
               <button
                 onClick={() => setFilter('all')}

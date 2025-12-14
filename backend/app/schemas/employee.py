@@ -11,9 +11,16 @@ class EmployeBase(BaseModel):
     departement: str | None = None
     date_embauche: date | None = None
 
-class EmployeCreate(EmployeBase):
-    # is_active خليته default = True فالموديل
-    pass
+class EmployeCreate(BaseModel):
+    # Matricule is optional - will be auto-generated if not provided
+    matricule: str | None = None
+    first_name: str
+    last_name: str
+    email: EmailStr | None = None
+    phone: str | None = None
+    poste: str | None = None
+    departement: str | None = None
+    date_embauche: date | None = None
 
 class EmployeRead(EmployeBase):
     id: int

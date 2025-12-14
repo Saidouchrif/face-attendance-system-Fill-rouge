@@ -1,10 +1,26 @@
 # app/services/employe_service.py
 from sqlalchemy.orm import Session
 from datetime import datetime
+import random
+import string
 
 from app.models.employee import Employe
 from app.models.face_template import FaceTemplate
 from app.schemas.employee import EmployeCreate
+
+def generate_unique_matricule(db: Session) -> str:
+    """
+    Generate a unique matricule in format EMP + 6 digits
+    """
+    while True:
+        # Generate random 6-digit number
+        number = ''.join(random.choices(string.digits, k=6))
+        matricule = f"EMP{number}"
+        
+        # Check if matricule already exists
+        existing = db.query(Employe).filter(Employe.matricule == matricule).first()
+        if not existing:
+            return matricule
 
 def get_employes(db: Session):
     return db.query(Employe).order_by(Employe.created_at.desc()).all()
@@ -13,8 +29,11 @@ def get_employe(db: Session, employe_id: int) -> Employe | None:
     return db.query(Employe).filter(Employe.id == employe_id).first()
 
 def create_employe(db: Session, data: EmployeCreate) -> Employe:
+    # Auto-generate matricule if not provided
+    matricule = data.matricule if data.matricule else generate_unique_matricule(db)
+    
     employe = Employe(
-        matricule=data.matricule,
+        matricule=matricule,
         first_name=data.first_name,
         last_name=data.last_name,
         email=data.email,
@@ -48,9 +67,9 @@ def update_employe(db: Session, employe_id: int, data: dict) -> Employe | None:
     if not employe:
         return None
     
-    # Update only provided fields
+    # Update only provided fields, but exclude matricule (cannot be changed)
     for key, value in data.items():
-        if hasattr(employe, key):
+        if hasattr(employe, key) and key != 'matricule':
             setattr(employe, key, value)
     
     employe.updated_at = datetime.utcnow()

@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 export default function AddEmployee() {
   const navigate = useNavigate();
   const [savedEmployee, setSavedEmployee] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    matricule: "",
     first_name: "",
     last_name: "",
     email: "",
@@ -19,16 +20,22 @@ export default function AddEmployee() {
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError(null);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
 
     try {
       const emp = await createEmployee(form);
       setSavedEmployee(emp);
     } catch (err) {
-      alert(err.message);
+      setError(err.message || "Erreur lors de la création de l'employé");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -62,28 +69,45 @@ export default function AddEmployee() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 lg:p-8">
+              {/* Error message */}
+              {error && (
+                <div className="mb-6 bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-red-800 mb-1">Erreur de validation</p>
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setError(null)}
+                      className="text-red-400 hover:text-red-600 transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Info banner about auto-generated matricule */}
+              <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-slate-700">
+                    <span className="font-semibold">Matricule automatique:</span> Un matricule unique sera généré automatiquement lors de l'enregistrement (format: EMP + 6 chiffres).
+                  </p>
+                </div>
+              </div>
+
               {/* Grid layout for form fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 
-                {/* Matricule */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                    </svg>
-                    <span>Matricule</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    name="matricule"
-                    value={form.matricule}
-                    onChange={handleChange}
-                    placeholder="Ex: EMP001"
-                    required
-                    className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all outline-none text-slate-900 font-medium"
-                  />
-                </div>
-
                 {/* Prénom */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center space-x-2">
@@ -235,12 +259,22 @@ export default function AddEmployee() {
               {/* SUBMIT BUTTON */}
               <button
                 type="submit"
-                className="group relative w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-2"
+                disabled={loading}
+                className="group relative w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Enregistrer l'employé</span>
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Enregistrement en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Enregistrer l'employé</span>
+                  </>
+                )}
               </button>
             </form>
           </div>
