@@ -1,6 +1,7 @@
 // AuthService: handles authentication, token storage, and current admin retrieval
 
 const TOKEN_KEY = 'authToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
 const ADMIN_KEY = 'currentAdmin';
 
 // Adjust if your backend runs on a different origin/port
@@ -27,12 +28,14 @@ export async function login(email, password) {
 
   const data = await response.json();
   const token = data.access_token;
+  const refreshToken = data.refresh_token;
 
-  if (!token) {
-    throw new Error('Invalid login response: no access token received.');
+  if (!token || !refreshToken) {
+    throw new Error('Invalid login response: no tokens received.');
   }
 
   saveToken(token);
+  saveRefreshToken(refreshToken);
 
   try {
     const admin = await getCurrentAdmin();
@@ -49,6 +52,7 @@ export async function login(email, password) {
 
 export function logout() {
   clearToken();
+  clearRefreshToken();
   clearAdmin();
 }
 
@@ -66,6 +70,53 @@ export function getToken() {
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+}
+
+export function saveRefreshToken(token) {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+export function getRefreshToken() {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function clearRefreshToken() {
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+export async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    throw new Error('No refresh token found');
+  }
+
+  const response = await fetch(getApiUrl('/auth/refresh'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!response.ok) {
+    clearToken();
+    clearRefreshToken();
+    clearAdmin();
+    throw new Error('Failed to refresh token. Please log in again.');
+  }
+
+  const data = await response.json();
+  const newAccessToken = data.access_token;
+  const newRefreshToken = data.refresh_token;
+
+  if (!newAccessToken || !newRefreshToken) {
+    throw new Error('Invalid refresh response: no tokens received.');
+  }
+
+  saveToken(newAccessToken);
+  saveRefreshToken(newRefreshToken);
+
+  return newAccessToken;
 }
 
 export function saveAdmin(admin) {

@@ -37,7 +37,7 @@ export default function AddEmployee() {
   }
 
   return (
-    <div className="p-6 lg:p-10">
+    <div className="p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Page header */}
         <div className="mb-8">

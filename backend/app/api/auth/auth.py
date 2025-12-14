@@ -5,8 +5,10 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_db
 from app.schemas.admin import AdminCreate, AdminRead
 from app.services.admin_service import create_admin, get_admin_by_email
-from app.core.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-from app.schemas.auth import LoginRequest, Token
+from app.core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.schemas.auth import LoginRequest, Token, RefreshTokenRequest
+from jose import jwt, JWTError
+from app.core.security import SECRET_KEY, ALGORITHM
 from datetime import timedelta
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -29,9 +31,10 @@ def login_admin(credentials: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Admin inactive")
 
     token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    token = create_access_token({"sub": admin.email}, token_expires)
+    access_token = create_access_token({"sub": admin.email}, token_expires)
+    refresh_token = create_refresh_token({"sub": admin.email})
 
-    return Token(access_token=token)
+    return Token(access_token=access_token, refresh_token=refresh_token)
 
 
 # -----------------------------------
@@ -53,3 +56,37 @@ def create_new_admin(admin: AdminCreate, db: Session = Depends(get_db)):
     )
 
     return new_admin
+
+
+# -----------------------------------
+# 🔄 REFRESH TOKEN
+# -----------------------------------
+@router.post("/refresh", response_model=Token)
+def refresh_access_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    """
+    Rafraîchit l'access token en utilisant le refresh token.
+    Permet de renouveler automatiquement la session sans re-authentification.
+    """
+    try:
+        payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        token_type: str = payload.get("type")
+        
+        if email is None or token_type != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+        
+        admin = get_admin_by_email(db, email)
+        if not admin:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        if not admin.is_active:
+            raise HTTPException(status_code=400, detail="Admin inactive")
+        
+        token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        new_access_token = create_access_token({"sub": email}, token_expires)
+        new_refresh_token = create_refresh_token({"sub": email})
+        
+        return Token(access_token=new_access_token, refresh_token=new_refresh_token)
+        
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")

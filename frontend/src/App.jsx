@@ -11,6 +11,9 @@ import AdminLayout from './components/AdminLayout';
 import './App.css';
 import AddEmployee from './pages/AddEmploye';
 import Employees from './pages/Employees';
+import EditEmploye from './pages/EditEmploye';
+import DetailsEmploye from './pages/DetailsEmploye';
+import Presence from './pages/Presence';
 import FacePunch from './pages/FacePunch';
 import TrainFace from './pages/TrainFace';
 
@@ -32,7 +35,9 @@ function App() {
           <Route path="/dashboard" element={<AdminLayout><Dashboard /></AdminLayout>} />
           <Route path="/employees" element={<AdminLayout><Employees /></AdminLayout>} />
           <Route path="/add-employee" element={<AdminLayout><AddEmployee /></AdminLayout>} />
-          <Route path="/presences" element={<AdminLayout><div className="p-6 lg:p-10"><div className="max-w-4xl mx-auto"><h1 className="text-3xl font-bold text-slate-900 mb-2">Présences</h1><p className="text-slate-600">Page en cours de développement...</p></div></div></AdminLayout>} />
+          <Route path="/edit-employee/:id" element={<AdminLayout><EditEmploye /></AdminLayout>} />
+          <Route path="/employee-details/:id" element={<AdminLayout><DetailsEmploye /></AdminLayout>} />
+          <Route path="/presences" element={<AdminLayout><Presence /></AdminLayout>} />
           <Route path="/face-punch" element={<AdminLayout><FacePunch /></AdminLayout>} />
           <Route path="/train-face/:id" element={<AdminLayout><TrainFace /></AdminLayout>} />
         </Route>

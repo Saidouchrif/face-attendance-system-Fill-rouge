@@ -1,12 +1,11 @@
-// src/pages/TrainFace.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { sendTrainingFrame } from "../services/faceService";
 
-const TOTAL_SAMPLES = 20; // شحال من صورة بغيت تدرب بها
+const TOTAL_SAMPLES = 20; 
 
 export default function TrainFace() {
-  const { id } = useParams();           // employeId
+  const { id } = useParams();          
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -18,7 +17,6 @@ export default function TrainFace() {
     "Placez le visage de l'employé dans le cadre, puis lancez l'entraînement."
   );
 
-  // تشغيل الكاميرا
   useEffect(() => {
     async function startCamera() {
       try {
@@ -48,7 +46,6 @@ export default function TrainFace() {
     };
   }, []);
 
-  // fonction اللي كتاخد frame وكتصيفطها للـ API
   const captureOneFrame = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -72,7 +69,6 @@ export default function TrainFace() {
     }
   };
 
-  // إطلاق training: كيبدأ ياخد بزاف ديال الصور
   const startTraining = async () => {
     if (!isCameraReady) return;
 
@@ -82,11 +78,9 @@ export default function TrainFace() {
     let localCount = 0;
 
     while (localCount < TOTAL_SAMPLES) {
-      // ننتظر شوية بين كل صورة وصورة
-      // eslint-disable-next-line no-await-in-loop
+
       await new Promise((res) => setTimeout(res, 600));
 
-      // eslint-disable-next-line no-await-in-loop
       await captureOneFrame();
       localCount += 1;
     }
@@ -102,7 +96,7 @@ export default function TrainFace() {
   };
 
   return (
-    <div className="p-6 lg:p-10">
+    <div className="p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -124,7 +118,7 @@ export default function TrainFace() {
                 autoPlay
                 muted
               />
-              {/* cadre بسيط حول الوجه */}
+            
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-48 h-48 border-4 border-emerald-400 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.7)]" />
               </div>
@@ -182,7 +176,6 @@ export default function TrainFace() {
           </div>
         </div>
 
-        {/* canvas caché لالتقاط الصور */}
         <canvas ref={canvasRef} className="hidden" />
       </div>
     </div>

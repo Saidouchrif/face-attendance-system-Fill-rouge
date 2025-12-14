@@ -1,11 +1,13 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 import uuid, os
 import numpy as np
 from deepface import DeepFace
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
+from app.core.deps import get_db, get_current_admin
 from app.models.face_template import FaceTemplate
 from app.models.employee import Employe
+from app.services.employe_service import get_employee_model_info
 import cv2
 
 router = APIRouter(prefix="/api", tags=["Recognition"])
@@ -79,3 +81,18 @@ async def recognize_face(image: UploadFile = File(...)):
         },
         "confidence": round(best_score * 100, 2)
     }
+
+
+@router.get("/face/model-info/{employee_id}")
+def get_model_info_endpoint(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_admin=Depends(get_current_admin)
+):
+    """
+    Get face recognition model information for a specific employee
+    """
+    model_info = get_employee_model_info(db, employee_id)
+    if model_info is None:
+        raise HTTPException(status_code=404, detail="Employee not found or no face profile")
+    return model_info

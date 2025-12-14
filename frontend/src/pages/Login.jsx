@@ -14,6 +14,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [lang, setLang] = useState('fr');
+  const [alreadyConnected, setAlreadyConnected] = useState(false);
   usePageTitle('Connexion Admin');
 
   const texts = {
@@ -33,6 +34,8 @@ const Login = () => {
       loginButton: 'Se connecter',
       signingIn: 'Connexion...',
       help: 'Aide & support',
+      alreadyConnectedTitle: 'Déjà connecté',
+      alreadyConnectedMessage: 'Vous êtes déjà connecté. Redirection vers le tableau de bord...',
     },
     ar: {
       heroSubtitle: 'بوابة الإدارة',
@@ -50,16 +53,21 @@ const Login = () => {
       loginButton: 'تسجيل الدخول',
       signingIn: 'جاري تسجيل الدخول...',
       help: 'المساعدة والدعم',
+      alreadyConnectedTitle: 'متصل بالفعل',
+      alreadyConnectedMessage: 'أنت متصل بالفعل. إعادة التوجيه إلى لوحة التحكم...',
     },
   };
 
   const t = texts[lang];
   const isArabic = lang === 'ar';
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, show message then redirect to dashboard
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/dashboard', { replace: true });
+      setAlreadyConnected(true);
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 2000); // Redirect after 2 seconds
     }
   }, [navigate]);
 
@@ -120,6 +128,30 @@ const Login = () => {
 
       {/* Right side: white login card */}
       <div className="flex w-full lg:w-1/2 items-center justify-center bg-slate-50 px-4 py-10 lg:px-10">
+        {alreadyConnected ? (
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 px-6 py-8 md:px-8 md:py-10">
+            <div className="flex flex-col items-center justify-center space-y-6 py-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                  {t.alreadyConnectedTitle}
+                </h2>
+                <p className="text-slate-600">
+                  {t.alreadyConnectedMessage}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 px-6 py-8 md:px-8 md:py-10">
           {/* Logo centered above the form */}
           <div className="flex justify-center mb-6">
@@ -222,6 +254,7 @@ const Login = () => {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

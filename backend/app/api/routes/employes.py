@@ -10,6 +10,8 @@ from app.services.employe_service import (
     get_employe,
     create_employe,
     delete_employe,
+    update_employe,
+    get_employee_model_info,
 )
 
 router = APIRouter(
@@ -40,6 +42,18 @@ def get_employee_detail(
     current_admin=Depends(get_current_admin)
 ):
     emp = get_employe(db, employee_id)
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    return emp
+
+@router.put("/{employee_id}", response_model=EmployeRead)
+def update_employee_endpoint(
+    employee_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_admin=Depends(get_current_admin)
+):
+    emp = update_employe(db, employee_id, payload)
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
     return emp
