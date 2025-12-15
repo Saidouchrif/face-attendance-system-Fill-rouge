@@ -1,2 +1,8 @@
 storage/
 .env
+# Python venv
+backend/.venv310/
+.venv/
+venv/
+__pycache__/
+*.pyc
