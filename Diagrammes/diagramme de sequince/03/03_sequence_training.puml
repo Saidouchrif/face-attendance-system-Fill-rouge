@@ -1,0 +1,52 @@
+@startuml
+title Sequence - Entraînement du visage (Training)
+autonumber
+skinparam shadowing false
+
+actor "Admin" as Admin
+boundary "React UI\n(EditEmploye / Training)" as FE
+control "FastAPI\nTraining Endpoint" as API
+control "FaceTrainingService" as TrainSvc
+database "MySQL\n(employes, face_templates)" as DB
+collections "Storage\nstorage/face_data/<employee_folder>/" as FS
+entity "DeepFace\n(FaceNet)" as DF
+
+Admin -> FE : Ouvrir EditEmploye\net lancer capture training
+FE -> FE : Capture image (frame)\nConvertir en Blob/File
+
+FE -> API : POST /api/employees/{id}/train-face\n(file=image)
+activate API
+
+API -> DB : SELECT Employe WHERE id=employe_id
+DB --> API : Employe
+
+API -> TrainSvc : save_sample(employe_id, img_bgr)
+activate TrainSvc
+
+TrainSvc -> TrainSvc : build_employee_folder(employe)\nmatricule_first_last
+TrainSvc -> FS : mkdir (if not exists)
+
+TrainSvc -> FS : write image\ntrain_<ts>_<uuid>.jpg
+TrainSvc -> DF : represent(model_name="Facenet")\n(enforce_detection=false)
+DF --> TrainSvc : embedding(float[])
+
+TrainSvc -> FS : write embedding\ntrain_<ts>_<uuid>.npy
+
+TrainSvc -> DB : INSERT face_templates\n(employe_id,image_path,encoding_path,type,active,created_at)
+DB --> TrainSvc : template_id
+
+TrainSvc -> DB : COUNT active templates for employe_id
+DB --> TrainSvc : count
+
+TrainSvc -> DB : UPDATE employes\nhas_face_profile=1\nface_samples_count=count\nlast_face_training_at=utcnow()
+DB --> TrainSvc : OK
+
+TrainSvc --> API : TrainingResult(template_id, paths)
+deactivate TrainSvc
+
+API --> FE : 200 OK\n{template_id, image_path, encoding_path}
+deactivate API
+
+FE -> Admin : Message: "Training réussi"\n+ refresh details
+
+@enduml

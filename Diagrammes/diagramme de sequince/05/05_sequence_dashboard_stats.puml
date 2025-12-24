@@ -1,0 +1,38 @@
+@startuml
+title Sequence - Dashboard Statistiques
+autonumber
+skinparam shadowing false
+
+actor "Administrateur" as Admin
+boundary "React UI\n(Dashboard.jsx)" as FE
+control "FastAPI\n/stats/dashboard" as API
+control "StatsService" as StatsSvc
+database "MySQL\n(employes, presences)" as DB
+
+Admin -> FE : Ouvrir page Dashboard
+FE -> API : GET /api/stats/dashboard
+activate API
+API -> StatsSvc : dashboard_stats(today)
+activate StatsSvc
+
+StatsSvc -> DB : COUNT Employe.id
+DB --> StatsSvc : total_employees
+
+StatsSvc -> DB : COUNT DISTINCT Presence.employe_id\nWHERE Presence.jour=today
+DB --> StatsSvc : present_today
+
+StatsSvc -> DB : COUNT Presence.id\nWHERE Presence.jour=today AND status="late"
+DB --> StatsSvc : late_today
+
+StatsSvc -> DB : COUNT Presence.id (total_pointages)
+DB --> StatsSvc : total_pointages
+
+StatsSvc --> API : {totals + today}
+deactivate StatsSvc
+
+API --> FE : 200 OK\nJSON stats
+deactivate API
+
+FE -> Admin : Afficher cards\n(total_employees, present_today, late_today, total_pointages)
+
+@enduml

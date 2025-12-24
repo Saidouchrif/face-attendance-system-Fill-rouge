@@ -1,0 +1,80 @@
+@startuml
+title Sequence - Reconnaissance + Pointage (Check-in / Check-out)
+autonumber
+skinparam shadowing false
+
+actor "Employé" as Emp
+boundary "React UI\n(FacePunch)" as FE
+control "FastAPI\n/recognize-face" as RecAPI
+control "FaceRecognitionService" as RecSvc
+database "MySQL\n(face_templates, employes, presences)" as DB
+collections "Storage\nrecognition_tmp/" as TMP
+collections "Storage\nface_data/" as FS
+entity "DeepFace\n(FaceNet)" as DF
+control "FastAPI\n/presence/mark/{id}" as PresAPI
+control "PresenceService" as PresSvc
+
+Emp -> FE : Ouvrir FacePunch\n& démarrer caméra
+FE -> FE : Capture frame -> File
+
+FE -> RecAPI : POST /api/recognize-face (file=image)
+activate RecAPI
+RecAPI -> TMP : Save temp image
+RecAPI -> RecSvc : recognize(img)
+activate RecSvc
+
+RecSvc -> DF : represent(Facenet)\n(enforce_detection=false)
+DF --> RecSvc : query_embedding
+
+RecSvc -> DB : SELECT face_templates WHERE is_active=1
+DB --> RecSvc : templates list (paths)
+
+loop For each template
+  RecSvc -> FS : load .npy (encoding_path)
+  FS --> RecSvc : template_embedding
+  RecSvc -> RecSvc : cosine_similarity(query, template)
+end
+
+RecSvc -> RecSvc : best_match(score, employe_id)
+RecSvc -> DB : SELECT Employe WHERE id=best_employe
+DB --> RecSvc : Employe
+
+RecSvc --> RecAPI : result(best_score, employe or null)
+deactivate RecSvc
+
+alt best_score < 0.70
+  RecAPI --> FE : 200 OK\n{"recognized": false, "message":"Face not recognized"}
+  deactivate RecAPI
+  FE -> Emp : Afficher "Non reconnu"
+else recognized
+  RecAPI --> FE : 200 OK\n{"recognized": true, "employee": {...}, "confidence": score*100}
+  deactivate RecAPI
+
+  FE -> PresAPI : POST /api/presence/mark/{employee_id}
+  activate PresAPI
+  PresAPI -> PresSvc : mark_presence(employee_id)
+  activate PresSvc
+
+  PresSvc -> DB : SELECT Presence WHERE employe_id AND jour=today
+  DB --> PresSvc : presence (or null)
+
+  alt no presence today
+    PresSvc -> DB : INSERT Presence(jour=today, check_in_time=now, status=on_time/late)
+    DB --> PresSvc : inserted
+    PresSvc --> PresAPI : "Check-in saved"
+  else presence exists AND check_out_time is null
+    PresSvc -> DB : UPDATE Presence SET check_out_time=now
+    DB --> PresSvc : updated
+    PresSvc --> PresAPI : "Check-out saved"
+  else already checked out
+    PresSvc --> PresAPI : "Already checked out today"
+  end
+
+  deactivate PresSvc
+  PresAPI --> FE : 200 OK\n{message, jour, check_in_time, check_out_time, status}
+  deactivate PresAPI
+
+  FE -> Emp : Afficher confirmation pointage
+end
+
+@enduml

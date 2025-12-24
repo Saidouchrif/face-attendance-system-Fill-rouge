@@ -1,0 +1,65 @@
+@startuml
+title Face Attendance System - Diagramme de cas d'utilisation
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor Administrateur as Admin
+actor Employe as Emp
+
+rectangle "Face Attendance System" {
+
+  usecase "Authentification Administrateur" as UC_Login
+  usecase "Gérer les employés (CRUD)" as UC_EmployeCRUD
+  usecase "Consulter détails employé" as UC_EmployeDetails
+  usecase "Entraîner le visage d'un employé" as UC_Train
+  usecase "Changer / Réentraîner le visage" as UC_Retrain
+  usecase "Activer / Désactiver un template" as UC_ToggleTemplate
+
+  usecase "Pointer par reconnaissance faciale" as UC_Punch
+  usecase "Reconnaître le visage" as UC_Recognize
+  usecase "Enregistrer entrée / sortie" as UC_MarkPresence
+  usecase "Afficher confirmation" as UC_Confirm
+
+  usecase "Consulter présences journalières" as UC_DailyPresences
+  usecase "Consulter dashboard et statistiques" as UC_Dashboard
+  usecase "Générer rapport (optionnel)" as UC_Report
+
+  usecase "Supprimer données biométriques (RGPD)" as UC_DeleteBio
+}
+
+Admin --> UC_Login
+Admin --> UC_EmployeCRUD
+Admin --> UC_EmployeDetails
+Admin --> UC_Train
+Admin --> UC_Retrain
+Admin --> UC_ToggleTemplate
+Admin --> UC_DailyPresences
+Admin --> UC_Dashboard
+Admin --> UC_Report
+Admin --> UC_DeleteBio
+
+Emp --> UC_Punch
+
+UC_Punch ..> UC_Recognize : <<include>>
+UC_Punch ..> UC_MarkPresence : <<include>>
+UC_Punch ..> UC_Confirm : <<include>>
+
+UC_Retrain ..> UC_Train : <<extend>>
+
+note right of UC_Recognize
+Le système utilise DeepFace (FaceNet)
+pour extraire un embedding facial
+et comparer avec les templates actifs.
+end note
+
+note right of UC_MarkPresence
+La présence est enregistrée avec :
+- jour
+- heure d'entrée
+- heure de sortie
+- statut (a l'heure / en retard)
+end note
+
+@enduml
