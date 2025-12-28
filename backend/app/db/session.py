@@ -1,14 +1,7 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
 import os
 import socket
-
-# Load .env
-if os.path.exists(".env.local"):
-    load_dotenv(".env.local")
-elif os.path.exists(".env"):
-    load_dotenv(".env")
 
 # Detect Docker
 def is_docker():

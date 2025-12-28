@@ -7,8 +7,10 @@ from app.api.routes.employes import router as employees_router
 from app.api.routes.recognition import router as recognition_router
 from app.api.routes.stats import router as stats_router
 from app.api.routes.presence import router as presence_router
+from app.api.routes.reports import router as reports_router
 
 router = APIRouter()
+router.include_router(reports_router)
 router.include_router(recognition_router)
 router.include_router(stats_router)
 router.include_router(presence_router)

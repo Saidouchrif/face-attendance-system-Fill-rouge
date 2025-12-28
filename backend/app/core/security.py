@@ -4,14 +4,7 @@ from typing import Optional
 
 from jose import jwt
 from passlib.context import CryptContext
-from dotenv import load_dotenv
 import os
-
-# ---------------- Load environment variables ----------------
-if os.path.exists(".env.local"):
-    load_dotenv(".env.local")
-elif os.path.exists(".env"):
-    load_dotenv(".env")
 
 # ---------------- Security config ----------------
 SECRET_KEY = os.getenv("SECRET_KEY", "Saidouchrif12345")

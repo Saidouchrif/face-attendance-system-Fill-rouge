@@ -6,6 +6,9 @@ from app.api.routes.routes import router as api_router
 import app.db.base # Ensures all models are imported
 app = FastAPI(title="Face Attendance System - Backend")
 
+
+
+
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
