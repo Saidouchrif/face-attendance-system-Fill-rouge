@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { getToken } from '../services/authService';
 
 export default function Presence() {
   const navigate = useNavigate();
@@ -11,6 +10,8 @@ export default function Presence() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, present, late, out_of_hours
   const [dateFilter, setDateFilter] = useState(''); // Date filter
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadPresences();
@@ -19,8 +20,11 @@ export default function Presence() {
   async function loadPresences() {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
+      const token = getToken();
+      if (!token) {
+        throw new Error('Token manquant, veuillez vous reconnecter.');
+      }
+
       const response = await fetch('http://localhost:8000/api/presence/list', {
         method: 'GET',
         headers: {
@@ -43,7 +47,22 @@ export default function Presence() {
     }
   }
 
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'present':
+        return "À l'heure";
+      case 'late':
+        return 'En retard';
+      case 'out_of_hours':
+        return 'Hors horaire';
+      default:
+        return status || '-';
+    }
+  };
+
   const filteredPresences = presences.filter(p => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
     // Filter by status
     let statusMatch = true;
     if (filter === 'present') statusMatch = p.status === 'present';
@@ -56,40 +75,56 @@ export default function Presence() {
       dateMatch = p.date === dateFilter;
     }
     
-    return statusMatch && dateMatch;
+    const searchMatch =
+      normalizedSearch.length === 0 ||
+      [
+        p.employee?.first_name,
+        p.employee?.last_name,
+        p.employee?.matricule,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(normalizedSearch));
+
+    return statusMatch && dateMatch && searchMatch;
   });
 
   // Export to PDF
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(16);
-    doc.text('Liste des présences', 14, 15);
-    
-    // Prepare table data
-    const tableColumn = ['Date', 'Employé', 'Matricule', 'Poste', 'Entrée', 'Sortie', 'Statut', 'Confiance'];
-    const tableRows = filteredPresences.map(p => [
-      p.date || '',
-      `${p.employee.first_name} ${p.employee.last_name}`,
-      p.employee.matricule || '',
-      p.employee.poste || '',
-      p.check_in_time || '-',
-      p.check_out_time || '-',
-      p.status || '',
-      p.confidence ? `${p.confidence}%` : '-'
-    ]);
+  const exportToPDF = async () => {
+    if (filteredPresences.length === 0 || pdfLoading) return;
 
-    // Generate table with correct syntax
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 25,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [59, 130, 246] }
-    });
-    
-    doc.save('presences.pdf');
+    try {
+      setPdfLoading(true);
+      const token = getToken();
+      if (!token) {
+        throw new Error('Token manquant, veuillez vous reconnecter.');
+      }
+
+      const response = await fetch('http://localhost:8000/api/reports/pdf/presences', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Impossible de générer le PDF des présences');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'historique-presences.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erreur lors du téléchargement du PDF:', err);
+      alert(err.message || 'Impossible de générer le PDF pour le moment. Veuillez réessayer.');
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   // Export to Excel
@@ -101,7 +136,7 @@ export default function Presence() {
       'Poste': p.employee.poste || '',
       'Heure d\'entrée': p.check_in_time || '-',
       'Heure de sortie': p.check_out_time || '-',
-      'Statut': p.status || '',
+      'Statut': formatStatus(p.status),
       'Confiance': p.confidence ? `${p.confidence}%` : '-'
     })));
     
@@ -200,34 +235,55 @@ export default function Presence() {
 
         {/* Filters and Export Buttons */}
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-semibold text-slate-700">Filtrer par date:</span>
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {dateFilter && (
-                <button
-                  onClick={() => setDateFilter('')}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Réinitialiser
-                </button>
-              )}
+          <div className="flex flex-col gap-4 mb-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-3 md:space-y-0 w-full lg:w-auto">
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Rechercher (nom, matricule)
+                </label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Ex: EMP123 ou Dupont"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-semibold text-slate-700 whitespace-nowrap">Filtrer par date:</span>
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {(dateFilter || searchTerm) && (
+                  <button
+                    onClick={() => {
+                      setDateFilter('');
+                      setSearchTerm('');
+                    }}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex space-x-2">
               <button
                 onClick={exportToPDF}
-                disabled={filteredPresences.length === 0}
+                disabled={filteredPresences.length === 0 || pdfLoading}
                 className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span>Exporter PDF</span>
+                {pdfLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                )}
+                <span>{pdfLoading ? 'Génération...' : 'Exporter PDF'}</span>
               </button>
               <button
                 onClick={exportToExcel}

@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchEmployees } from "../services/employeesService";
+import { fetchEmployees, downloadEmployeesPdf } from "../services/employeesService";
 import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 export default function Employees() {
   const navigate = useNavigate();
@@ -13,9 +11,15 @@ export default function Employees() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     console.log("Employees component mounted");
+
     setLoading(true);
     fetchEmployees()
       .then((data) => {
@@ -30,28 +34,89 @@ export default function Employees() {
       });
   }, []);
 
-  // Export functions
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    const tableColumn = ["Matricule", "Nom", "Prénom", "Email", "Téléphone", "Poste", "Département", "Date d'embauche"];
-    const tableRows = employees.map(emp => [
-      emp.matricule || "",
-      emp.last_name || "",
-      emp.first_name || "",
-      emp.email || "",
-      emp.phone || "",
-      emp.poste || "",
-      emp.departement || "",
-      emp.date_embauche || ""
-    ]);
+  const departments = useMemo(() => {
+    const unique = new Set(
+      employees
+        .map((emp) => emp.departement)
+        .filter((dept) => dept && dept.trim().length > 0)
+    );
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [employees]);
 
-    doc.autoTable(tableColumn, tableRows, { startY: 20 });
-    doc.text("Liste des employés", 14, 15);
-    doc.save("employees.pdf");
+  const filteredEmployees = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const fromDate = dateFrom ? new Date(dateFrom) : null;
+    const toDate = dateTo ? new Date(dateTo) : null;
+
+    return employees.filter((emp) => {
+      const matchesDepartment =
+        departmentFilter === "all" ||
+        (emp.departement || "").toLowerCase() === departmentFilter.toLowerCase();
+
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        [emp.first_name, emp.last_name, emp.matricule]
+          .filter(Boolean)
+          .map((value) => value.toLowerCase())
+          .some((value) => value.includes(normalizedSearch));
+
+      if (!dateFrom && !dateTo) {
+        return matchesDepartment && matchesSearch;
+      }
+
+      const hireDateRaw = emp.date_embauche;
+      const hireDate = hireDateRaw ? new Date(hireDateRaw) : null;
+      if (!hireDate || Number.isNaN(hireDate.getTime())) {
+        return false;
+      }
+
+      const matchesFrom = !fromDate || hireDate >= fromDate;
+      const matchesTo = !toDate || hireDate <= toDate;
+
+      return matchesDepartment && matchesSearch && matchesFrom && matchesTo;
+    });
+  }, [employees, searchTerm, departmentFilter, dateFrom, dateTo]);
+
+  const filtersApplied =
+    searchTerm.trim().length > 0 ||
+    departmentFilter !== "all" ||
+    dateFrom !== "" ||
+    dateTo !== "";
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setDepartmentFilter("all");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  // Export functions
+  const exportToPDF = async () => {
+    if (employees.length === 0 || pdfLoading) return;
+
+    try {
+      setPdfLoading(true);
+      const pdfBlob = await downloadEmployeesPdf();
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "liste-employes.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Erreur lors du téléchargement du PDF:", err);
+      alert("Impossible de générer le PDF pour le moment. Veuillez réessayer.");
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(employees.map(emp => ({
+    if (filteredEmployees.length === 0) return;
+
+    const worksheet = XLSX.utils.json_to_sheet(filteredEmployees.map((emp) => ({
       "Matricule": emp.matricule || "",
       "Nom": emp.last_name || "",
       "Prénom": emp.first_name || "",
@@ -61,7 +126,6 @@ export default function Employees() {
       "Département": emp.departement || "",
       "Date d'embauche": emp.date_embauche || ""
     })));
-    
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
     XLSX.writeFile(workbook, "employees.xlsx");
@@ -74,7 +138,7 @@ export default function Employees() {
 
   const handleDeleteConfirm = async () => {
     if (!selectedEmployee) return;
-    
+
     setDeleting(true);
     try {
       const token = localStorage.getItem('token');
@@ -129,7 +193,14 @@ export default function Employees() {
           <div className="bg-white px-4 py-2 rounded-xl shadow-lg border border-slate-200">
             <div className="flex items-center space-x-2">
               <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-bold text-slate-800">{employees.length}</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-800">
+                  {filteredEmployees.length}
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  sur {employees.length}
+                </span>
+              </div>
               <span className="text-sm text-slate-600">employés</span>
             </div>
           </div>
@@ -163,22 +234,26 @@ export default function Employees() {
             </svg>
             <span className="relative z-10">Ajouter un employé</span>
           </button>
-          
+
           <button
             onClick={exportToPDF}
-            disabled={employees.length === 0}
+            disabled={employees.length === 0 || pdfLoading}
             className="group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md flex items-center space-x-3 font-medium"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-            <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <span className="relative z-10">Exporter PDF</span>
+            {pdfLoading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin relative z-10"></div>
+            ) : (
+              <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            )}
+            <span className="relative z-10">{pdfLoading ? "Génération..." : "Exporter PDF"}</span>
           </button>
-          
+
           <button
             onClick={exportToExcel}
-            disabled={employees.length === 0}
+            disabled={filteredEmployees.length === 0}
             className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md flex items-center space-x-3 font-medium"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-green-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
@@ -190,29 +265,85 @@ export default function Employees() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 p-6 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-3 md:space-y-0">
+          <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            <span>Filtres avancés</span>
+          </h3>
+          <button
+            onClick={handleResetFilters}
+            disabled={!filtersApplied}
+            className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Réinitialiser
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1">
+              Recherche (nom, prénom, matricule)
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Ex: EMP123456 ou Dupont"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1">
+              Département
+            </label>
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+            >
+              <option value="all">Tous les départements</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept.toLowerCase()}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1">
+              Date d'embauche (du)
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1">
+              Date d'embauche (au)
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Loading state */}
       {loading && (
         <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-12">
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
             <p className="text-slate-600 text-lg font-medium">Chargement des employés...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Error state */}
-      {error && (
-        <div className="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-2xl p-6 mb-8">
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-red-800 font-semibold mb-1">Erreur de chargement</h3>
-              <p className="text-red-700">{error}</p>
-            </div>
           </div>
         </div>
       )}
@@ -240,8 +371,32 @@ export default function Employees() {
         </div>
       )}
 
+      {!loading && !error && employees.length > 0 && filteredEmployees.length === 0 && (
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-12 mb-8">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center border border-yellow-100">
+              <svg className="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Aucun résultat</h3>
+              <p className="text-slate-600 mb-4">
+                Aucun employé ne correspond aux filtres sélectionnés.
+              </p>
+              <button
+                onClick={handleResetFilters}
+                className="px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                Effacer les filtres
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Employees table */}
-      {!loading && !error && employees.length > 0 && (
+      {!loading && !error && filteredEmployees.length > 0 && (
         <div className="bg-gradient-to-br from-white to-slate-50/50 rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
           <div className="bg-gradient-to-r from-slate-50 via-white to-slate-50 px-6 py-5 border-b border-slate-200">
             <div className="flex items-center justify-between">
@@ -313,9 +468,9 @@ export default function Employees() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {employees.map((employee, index) => (
-                  <tr 
-                    key={employee.id} 
+                {filteredEmployees.map((employee, index) => (
+                  <tr
+                    key={employee.id}
                     className={`group hover:bg-gradient-to-r hover:from-blue-50/80 hover:via-purple-50/50 hover:to-blue-50/80 transition-all duration-200 border-l-4 border-transparent hover:border-blue-500 cursor-pointer ${
                       index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
                     }`}

@@ -25,6 +25,24 @@ export async function fetchEmployees() {
   return response.json();
 }
 
+export async function downloadEmployeesPdf() {
+  const token = getToken();
+  if (!token) throw new Error("No token available");
+
+  const response = await fetch(getApiUrl("/api/reports/pdf/employees"), {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to generate employees PDF");
+  }
+
+  return response.blob();
+}
+
 // 🟩 Create employee
 export async function createEmployee(employeeData) {
   const token = getToken();
