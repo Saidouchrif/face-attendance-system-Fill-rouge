@@ -1,8 +1,16 @@
-storage/
+# Environnement
 .env
-# Python venv
-backend/.venv310/
+
+# Storage
+storage/
+
+# Virtual environments
 .venv/
 venv/
+backend/.venv310/
+backend/.venv311/
+backend/.venv312/
+
+# Python cache
 __pycache__/
 *.pyc
