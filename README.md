@@ -22,7 +22,7 @@ Ouvrir PowerShell puis exécuter:
 
 ```powershell
 # Depuis le dossier backend
-PS C:\Users\saido\Desktop\face-attendance-system-Fill-rouge\backend> \.venv310\Scripts\Activate.ps1
+PS C:\Users\saido\Desktop\face-attendance-system-Fill-rouge\backend> .\.venv310\Scripts\Activate.ps1
 
 pip install -r requirements.txt
 
