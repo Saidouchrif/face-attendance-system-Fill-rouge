@@ -1,80 +1,168 @@
 # Face Attendance System
 
-Application de gestion de présence avec reconnaissance faciale.
+Plateforme de pointage automatique des employés combinant FastAPI, React/Vite et DeepFace (modèle Facenet) pour reconnaître les visages via webcam. Ce document décrit l’architecture complète, la mise en place, les diagrammes UML fournis et la chaîne de traitement Facenet.
 
-## Architecture
+---
 
-- **Backend**: FastAPI (Uvicorn) dans `backend/`
-- **Frontend**: React + Vite dans `frontend/`
-- **DB**: MySQL (local ou via Docker Compose)
+## 1. Structure du dépôt
 
-## Prérequis
-
-- **Python** 3.10+
-- **Node.js** 18+ (recommandé: 20)
-- **MySQL** 8 (si vous lancez en local sans Docker)
-
-## Lancer le projet en local (sans Docker)
-
-### 1) Backend (FastAPI)
-
-Ouvrir PowerShell puis exécuter:
-
-```powershell
-# Depuis le dossier backend
-PS C:\Users\saido\Desktop\face-attendance-system-Fill-rouge\backend> .\.venv310\Scripts\Activate.ps1
-
-pip install -r requirements.txt
-
-python -m uvicorn app.main:app --reload --port 8000
+```
+face-attendance-system-Fill-rouge/
+├── backend/                # API FastAPI + logique business
+├── frontend/               # SPA React + Vite
+├── Diagrammes/
+│   ├── Diagramme de classe/      # UML (PlantUML + PNG)
+│   ├── Diagramme de use cas/     # Cas d’utilisation
+│   └── diagramme de sequince/    # Séquences principales
+├── docker-compose.yml      # Orchestration complète (backend, frontend, MySQL, phpMyAdmin)
+├── .env.example            # Variables à copier en .env local
+└── README.md
 ```
 
-- **API**: `http://localhost:8000`
-- **Swagger**: `http://localhost:8000/docs`
-- **Healthcheck**: `http://localhost:8000/health`
+- **backend/** : FastAPI, SQLAlchemy, DeepFace, endpoints `/api/presence/*`, `/api/reports/*`, `/auth/*`.
+- **frontend/** : React Router, tailwind-like styles, pages publiques (`/`, `/entree`, `/sortie`, `/login`) et espace admin (`/dashboard`, `/employees`, `/presences`, `/train-face/:id`, etc.).
+- **Diagrammes/** : diagrammes UML exportés + sources `.puml` pour mise à jour rapide.
 
-#### Configuration (.env)
+---
 
-Le backend charge automatiquement un fichier `.env.local` ou `.env` depuis le dossier courant.
+## 2. UML & Documentation visuelle
 
-- **Emplacement recommandé**: `backend/.env` (ou `backend/.env.local`)
-- Variables possibles:
-  - `SECRET_KEY`
-  - `ALGORITHM` (par défaut `HS256`)
-  - `ACCESS_TOKEN_EXPIRE_MINUTES` (par défaut `60`)
-  - `REFRESH_TOKEN_EXPIRE_DAYS` (par défaut `7`)
+| Diagramme | Emplacement | Contenu |
+|-----------|-------------|---------|
+| Diagramme de classes | `Diagrammes/Diagramme de classe/02_class_diagram.puml` (+ `image.png`) | Entités principales (Employe, Presence, FaceTemplate, Admin) + relations DB |
+| Diagrammes de séquence | `Diagrammes/diagramme de sequince/` | Scénarios : pointage entrée, pointage sortie, entraînement |
+| Diagrammes de cas d’usage | `Diagrammes/Diagramme de use cas/` | Interactions Admin / Employé / Système |
 
-#### Base de données (mode local)
+Ouvrez les `.puml` avec PlantUML ou VSCode PlantUML pour régénérer les PNG.
 
-En mode local (sans Docker), le backend tente de se connecter à MySQL sur `127.0.0.1:3306`.
-Assurez-vous que MySQL est démarré et que l’utilisateur DB correspond à la configuration actuelle du projet.
+---
 
-### 2) Frontend (React + Vite)
+## 3. Architecture applicative
 
-Ouvrir un autre terminal:
+| Couche | Technologies | Détails |
+|--------|--------------|---------|
+| **Frontend** | React 18, Vite, Tailwind CSS-like styles | SPA responsive, appelle l’API via `fetch` + bearer token |
+| **Backend** | FastAPI, SQLAlchemy, DeepFace (Facenet), Uvicorn | API REST, génération de PDF (ReportLab), envoi e-mail (SMTP) |
+| **Reconnaissance faciale** | DeepFace (modèle Facenet) | Embeddings 128D, comparaison cosine ≥ 0.70 |
+| **Base de données** | MySQL 8 | Stocke employés, présences, templates faciaux, tokens rafraîchissement |
+| **Conteneurisation** | Docker Compose v2 | Services `backend`, `frontend`, `db`, `phpmyadmin` |
 
-```powershell
-# Depuis le dossier frontend
-PS C:\Users\saido\Desktop\face-attendance-system-Fill-rouge\frontend> npm install
-PS C:\Users\saido\Desktop\face-attendance-system-Fill-rouge\frontend> npm run dev
+---
+
+## 4. Pipeline Facenet dans le projet
+
+1. **Capture caméra** (frontend `Entree.jsx` / `Sortie.jsx`) → envoi d’une image `multipart/form-data`.
+2. **Traitement API** (`backend/app/api/routes/presence.py`) :
+   - Sauvegarde temporaire.
+   - Appel `DeepFace.represent(..., model_name="Facenet")`.
+   - Chargement des encodages existants (`FaceTemplate.encoding_path`).
+   - Similarité cosinus et seuil `0.70`.
+3. **Résultat** :
+   - Si match : appel `record_check_in` ou `record_check_out` (statut `present/late/out_of_hours`).
+   - Si échec : message explicite + score.
+4. **Nettoyage** : suppression de l’image temporaire, persistance de la présence et retour JSON (employee info, statut, confiance).
+
+Entraînement des visages : route `POST /api/face/capture-training` depuis `frontend/src/pages/TestFace/TrainFace.jsx`, qui capture 20 frames par employé et alimente `FaceTemplate`.
+
+---
+
+## 5. Variables d’environnement
+
+Copier `.env.example` à la racine en `.env` (non commité) :
+
+```
+cp .env.example .env
 ```
 
-- **Frontend**: `http://localhost:5173`
+Variables clés :
+- `DATABASE_URL` ou `DB_*`
+- `SECRET_KEY`, `JWT_SECRET`
+- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM_NAME`
+- `FRONTEND_URL`, `CORS_ORIGINS`
 
-## Lancer avec Docker Compose (recommandé)
+Dans `docker-compose.yml`, chaque variable possède un fallback (`${VAR:-default}`) pour éviter les plantages sans `.env`.
 
-Si vous voulez lancer **backend + frontend + mysql + phpmyadmin** en une seule commande:
+---
+
+## 6. Installation & exécution
+
+### 6.1. Mode Docker Compose (recommandé)
 
 ```powershell
-PS C:\Users\saido\Desktop\face-attendance-system-Fill-rouge> docker compose up --build
+docker compose build
+docker compose up --build -d   # (ou sans -d pour logs en direct)
 ```
 
-- **Backend**: `http://localhost:8000`
-- **Frontend**: `http://localhost:5173`
-- **phpMyAdmin**: `http://localhost:8080`
+Services exposés :
+- Backend FastAPI : http://localhost:8000 (Swagger: `/docs`)
+- Frontend Vite : http://localhost:5173
+- phpMyAdmin : http://localhost:8080
+- MySQL : port 3306
 
-Pour arrêter:
-
+Arrêt :
 ```powershell
 docker compose down
 ```
+
+### 6.2. Mode développeur (hors Docker)
+
+#### Backend
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\activate      # PowerShell
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Assurez-vous que MySQL tourne, et configurez `DATABASE_URL`.
+
+#### Frontend
+```powershell
+cd frontend
+npm install
+npm run dev -- --host --port 5173
+```
+
+---
+
+## 7. Points clés du code
+
+- **Authentification** : JWT (access + refresh). `frontend/src/services/authService.js` gère stockage local + refresh.
+- **Exports PDF & Email** : routes `api/reports/pdf/*` génèrent PDF (ReportLab) et peuvent être envoyées par e-mail.
+- **Composants UI** : `frontend/src/pages/Presence/Presence.jsx` propose export PDF/Excel et envoi e-mail (jour/semaine/mois).
+- **Docker** :
+  - `backend/Dockerfile`: image Python 3.11, dépendances OpenCV, stockage dans `/app`.
+  - `frontend/Dockerfile`: build multi-stage Node 20, Vite dev server exposé sur 5173.
+  - `docker-compose.yml`: configure restarts, volumes hot-reload (`backend/app` et `frontend/`).
+
+---
+
+## 8. Ressources supplémentaires
+
+- **Swagger UI** : http://localhost:8000/docs
+- **Collection Postman** : à générer via `http://localhost:8000/openapi.json`
+- **PlantUML** : ouvrez `.puml` depuis `Diagrammes/**` pour modifier les diagrammes.
+
+---
+
+## 9. Checklist de mise en production
+
+1. Définir toutes les variables sensibles (`SECRET_KEY`, SMTP, DSN).
+2. Générer et stocker les modèles faciaux (`/api/face/capture-training`).
+3. Configurer HTTPS (proxy Nginx / Traefik).
+4. Surveiller l’espace disque (`storage/reports`, `storage/presence_tmp`).
+5. Activer les sauvegardes MySQL (`volume mysql_data`).
+
+---
+
+## 10. Support & contribution
+
+1. **Issues / tickets** : ouvrir un ticket GitHub avec étapes de reproduction.
+2. **Workflow recommandé** :
+   - `git checkout -b feature/...`
+   - `npm run lint` / `pytest` (si tests ajoutés)
+   - PR → code review.
+3. **Contact** : administrateur principal du dépôt GitHub ou via e-mail défini dans `.env`.
+
+Bonne exploration 

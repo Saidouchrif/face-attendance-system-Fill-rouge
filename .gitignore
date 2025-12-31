@@ -1,0 +1,13 @@
+# Environment files
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node modules (if ever installed locally)
+frontend/node_modules/
+backend/node_modules/
+
+# Build artifacts
+*.log
