@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchEmployees, downloadEmployeesPdf } from "../services/employeesService";
+import { fetchEmployees, downloadEmployeesPdf } from "../../services/employeesService";
 import * as XLSX from "xlsx";
 
 export default function Employees() {

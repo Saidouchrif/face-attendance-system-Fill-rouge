@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import ecoleImage from '../images/ecole-image.jpg';
-import logo2 from '../images/logo2.jpg';
-import { usePageTitle } from '../hooks/usePageTitle';
+import ecoleImage from '../../images/ecole-image.jpg';
+import logo2 from '../../images/logo2.jpg';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const Home = () => {
   const [lang, setLang] = useState('fr');

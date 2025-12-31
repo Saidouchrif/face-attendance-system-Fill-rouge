@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDashboardStats } from "../services/statsService";
-import { usePageTitle } from "../hooks/usePageTitle";
-import PageHeader from "../components/PageHeader";
-import Card from "../components/Card";
+import { getDashboardStats } from "../../services/statsService";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import PageHeader from "../../components/PageHeader";
+import Card from "../../components/Card";
 
 const Dashboard = () => {
   const navigate = useNavigate();

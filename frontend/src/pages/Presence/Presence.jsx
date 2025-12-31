@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { getToken } from '../services/authService';
+import { getToken } from '../../services/authService';
 
 export default function Presence() {
   const navigate = useNavigate();

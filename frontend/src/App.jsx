@@ -1,20 +1,20 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Entree from './pages/Entree';
-import Sortie from './pages/Sortie';
+import Login from './pages/Login/Login';
+import Home from './pages/Pagehome/Home';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Entree from './pages/Entree_employee/Entree';
+import Sortie from './pages/Sortiee_employee/Sortie';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import AdminLayout from './components/AdminLayout';
 import './App.css';
-import AddEmployee from './pages/AddEmploye';
-import Employees from './pages/Employees';
-import EditEmploye from './pages/EditEmploye';
-import DetailsEmploye from './pages/DetailsEmploye';
-import Presence from './pages/Presence';
-import FacePunch from './pages/FacePunch';
+import AddEmployee from './pages/Employes/AddEmploye';
+import Employees from './pages/Employes/Employees';
+import EditEmploye from './pages/Employes/EditEmploye';
+import DetailsEmploye from './pages/Employes/DetailsEmploye';
+import Presence from './pages/Presence/Presence';
+import FacePunch from './pages/Components/FacePunch';
 import TrainFace from './pages/TrainFace';
 
 // Defines routes and uses ProtectedRoute as an AuthGuard.

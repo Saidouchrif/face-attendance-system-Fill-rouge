@@ -1,13 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usePageTitle } from '../hooks/usePageTitle';
-import logo2 from '../images/logo2.jpg';
+import { usePageTitle } from '../../hooks/usePageTitle';
+import logo2 from '../../images/logo2.jpg';
 
-const Entree = () => {
-  usePageTitle('Enregistrement de l\'heure d\'entrée');
+const Sortie = () => {
+  usePageTitle('Enregistrement de l\'heure de sortie');
   
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cameraError, setCameraError] = useState('');
   const [stream, setStream] = useState(null);
@@ -53,7 +52,7 @@ const Entree = () => {
   }, []);
   
   // Capture image and send to API
-  const handleCheckIn = async () => {
+  const handleCheckOut = async () => {
     if (!videoRef.current || processing) return;
     
     setProcessing(true);
@@ -76,7 +75,7 @@ const Entree = () => {
       formData.append('image', blob, 'capture.jpg');
       
       // Send to API
-      const response = await fetch('http://localhost:8000/api/presence/check-in', {
+      const response = await fetch('http://localhost:8000/api/presence/check-out', {
         method: 'POST',
         body: formData,
       });
@@ -89,7 +88,7 @@ const Entree = () => {
         setError(data.message || 'Erreur lors de l\'enregistrement');
       }
     } catch (err) {
-      console.error('Check-in error:', err);
+      console.error('Check-out error:', err);
       setError('Erreur de connexion au serveur');
     } finally {
       setProcessing(false);
@@ -108,7 +107,7 @@ const Entree = () => {
               className="h-10 w-auto object-contain"
             />
             <h1 className="text-white text-lg font-semibold">
-              Enregistrement d'entrée
+              Enregistrement de sortie
             </h1>
           </div>
           
@@ -120,10 +119,10 @@ const Entree = () => {
               Accueil
             </Link>
             <Link
-              to="/sortie"
+              to="/entree"
               className="text-slate-300 hover:text-white transition-colors text-sm font-medium"
             >
-              Enregistrer sortie
+              Enregistrer entrée
             </Link>
             <Link
               to="/login"
@@ -147,7 +146,7 @@ const Entree = () => {
                 Positionnez votre visage
               </h2>
               <p className="text-slate-300 text-sm md:text-base">
-                Veuillez vous placer devant la caméra pour enregistrer votre heure d'entrée
+                Veuillez vous placer devant la caméra pour enregistrer votre heure de sortie
               </p>
             </div>
 
@@ -202,7 +201,7 @@ const Entree = () => {
                       <p><span className="font-semibold">Employé:</span> {result.employee.first_name} {result.employee.last_name}</p>
                       <p><span className="font-semibold">Matricule:</span> {result.employee.matricule}</p>
                       <p><span className="font-semibold">Poste:</span> {result.employee.poste}</p>
-                      <p><span className="font-semibold">Heure d'entrée:</span> {result.presence.check_in_time}</p>
+                      <p><span className="font-semibold">Heure de sortie:</span> {result.presence.check_out_time}</p>
                       <p><span className="font-semibold">Statut:</span> {
                         result.presence.status === 'late' ? 'En retard' : 
                         result.presence.status === 'out_of_hours' ? 'Hors horaire' : 
@@ -234,7 +233,7 @@ const Entree = () => {
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
               <button
-                onClick={handleCheckIn}
+                onClick={handleCheckOut}
                 disabled={processing || isLoading || cameraError || result}
                 className="w-full sm:w-auto bg-gradient-to-r from-[#ff7e00] to-[#ffa500] text-white font-semibold py-3 px-8 rounded-xl shadow-lg transform transition duration-200 hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff7e00] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
               >
@@ -244,7 +243,7 @@ const Entree = () => {
                     <span>Traitement...</span>
                   </>
                 ) : (
-                  <span>Enregistrer l'entrée</span>
+                  <span>Enregistrer la sortie</span>
                 )}
               </button>
               
@@ -262,4 +261,4 @@ const Entree = () => {
   );
 };
 
-export default Entree;
+export default Sortie;

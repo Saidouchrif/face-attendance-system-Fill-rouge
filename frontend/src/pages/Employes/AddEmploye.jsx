@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createEmployee } from "../services/employeesService";
+import { createEmployee } from "../../services/employeesService";
 import { useNavigate } from "react-router-dom";
 
 export default function AddEmployee() {

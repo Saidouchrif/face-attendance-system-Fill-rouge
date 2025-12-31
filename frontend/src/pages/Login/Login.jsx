@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login as loginRequest, isAuthenticated } from '../services/authService';
-import ecoleImage from '../images/ecole-image.jpg';
-import logo2 from '../images/logo2.jpg';
-import { usePageTitle } from '../hooks/usePageTitle';
+import { login as loginRequest, isAuthenticated } from '../../services/authService';
+import ecoleImage from '../../images/ecole-image.jpg';
+import logo2 from '../../images/logo2.jpg';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 // Login page: UI + logic
 const Login = () => {

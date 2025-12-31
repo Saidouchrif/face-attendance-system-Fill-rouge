@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getEmployeeById, updateEmployee } from "../services/employeesService";
+import { getEmployeeById, updateEmployee } from "../../services/employeesService";
 
 export default function EditEmploye() {
   const { id } = useParams();
