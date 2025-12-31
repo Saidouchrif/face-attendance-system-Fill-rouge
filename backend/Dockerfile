@@ -4,9 +4,9 @@
 FROM python:3.11-slim
 
 # ===============================
-# 2️⃣ Install system dependencies (FIXED)
+# 2️⃣ System dependencies for OpenCV / numpy / face-recognition
 # ===============================
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     libgl1 \
@@ -17,40 +17,38 @@ RUN apt-get update && apt-get install -y \
     gfortran \
     && rm -rf /var/lib/apt/lists/*
 
+# ===============================
+# 3️⃣ Environment defaults
+# ===============================
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FASTAPI_ENV=production \
+    PORT=8000
 
 # ===============================
-# 3️⃣ Workdir
+# 4️⃣ Workdir
 # ===============================
 WORKDIR /app
 
 # ===============================
-# 4️⃣ Copy requirements
-# ===============================
-COPY backend/requirements.txt /app/requirements.txt
-
-# ===============================
 # 5️⃣ Install Python dependencies
 # ===============================
-RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 # ===============================
 # 6️⃣ Copy the FastAPI application
 # ===============================
-COPY backend/app /app/app
+COPY backend/app ./app
+COPY backend/storage ./storage
 
 # ===============================
-# 7️⃣ Environment variables
-# ===============================
-ENV PYTHONUNBUFFERED=1
-ENV FASTAPI_ENV=production
-ENV PORT=8000
-
-# ===============================
-# 8️⃣ Expose FastAPI port
+# 7️⃣ Expose FastAPI port
 # ===============================
 EXPOSE 8000
 
 # ===============================
-# 9️⃣ Start FastAPI server
+# 8️⃣ Start FastAPI server
 # ===============================
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

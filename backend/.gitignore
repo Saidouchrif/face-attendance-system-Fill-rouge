@@ -1,16 +1,22 @@
-# Environnement
-.env
-
-# Storage
+# Runtime generated files
 storage/
+storage/**
 
-# Virtual environments
-.venv/
-venv/
-backend/.venv310/
-backend/.venv311/
-backend/.venv312/
+# Face recognition data
+*.npy
+*.jpg
+*.png
+
+# Reports
+*.pdf
 
 # Python cache
 __pycache__/
 *.pyc
+
+# Environment variables
+.env
+
+# Virtual environment
+.venv/
+.venv310/
