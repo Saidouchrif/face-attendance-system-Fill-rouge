@@ -1,34 +1,22 @@
 # ============================
-# 1. Base Image
+# 1. Base Image (deps layer)
+# ============================
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install --legacy-peer-deps
+
+# ============================
+# 2. Runtime image
 # ============================
 FROM node:20-alpine
-
-# ============================
-# 2. Dossier de travail
-# ============================
 WORKDIR /app
-
-# ============================
-# 3. Copier les fichiers package
-# ============================
-COPY frontend/package*.json ./
-
-# ============================
-# 4. Installer dépendances npm
-# ============================
-RUN npm install
-
-# ============================
-# 5. Copier le code source React
-# ============================
+ENV NODE_ENV=development
+COPY --from=deps /app/node_modules ./node_modules
 COPY frontend/ .
 
 # ============================
-# 6. Exposer le port (Vite dev)
+# 3. Vite dev server
 # ============================
 EXPOSE 5173
-
-# ============================
-# 7. Commande de développement
-# ============================
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

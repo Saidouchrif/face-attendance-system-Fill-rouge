@@ -12,6 +12,9 @@ export default function Presence() {
   const [dateFilter, setDateFilter] = useState(''); // Date filter
   const [pdfLoading, setPdfLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendingReportType, setSendingReportType] = useState(null); // 'day' | 'week' | 'month'
+  const [sendFeedback, setSendFeedback] = useState(null);
 
   useEffect(() => {
     loadPresences();
@@ -57,6 +60,63 @@ export default function Presence() {
         return 'Hors horaire';
       default:
         return status || '-';
+    }
+  };
+
+  const reportEndpoints = {
+    day: {
+      url: 'http://localhost:8000/api/reports/pdf/day',
+      label: 'Rapport journalier',
+      description: 'Statistiques et retards du jour',
+    },
+    week: {
+      url: 'http://localhost:8000/api/reports/pdf/week',
+      label: 'Rapport hebdomadaire',
+      description: 'Synthèse des 7 derniers jours',
+    },
+    month: {
+      url: 'http://localhost:8000/api/reports/pdf/month',
+      label: 'Rapport mensuel',
+      description: 'Analyse complète du mois en cours',
+    },
+  };
+
+  const handleSendReportEmail = async (type) => {
+    if (sendingReportType || !reportEndpoints[type]) return;
+
+    try {
+      setSendingReportType(type);
+      setSendFeedback(null);
+      const token = getToken();
+      if (!token) {
+        throw new Error('Token manquant, veuillez vous reconnecter.');
+      }
+
+      const response = await fetch(reportEndpoints[type].url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || 'Impossible d’envoyer le rapport par email.');
+      }
+
+      setSendFeedback({
+        type: 'success',
+        message: 'Email envoyé avec succès. Consultez votre boîte de réception.',
+      });
+      setShowSendModal(false);
+    } catch (err) {
+      console.error('Erreur envoi email:', err);
+      setSendFeedback({
+        type: 'error',
+        message: err.message || 'Une erreur est survenue lors de l’envoi de l’email.',
+      });
+    } finally {
+      setSendingReportType(null);
     }
   };
 
@@ -295,8 +355,33 @@ export default function Presence() {
                 </svg>
                 <span>Exporter Excel</span>
               </button>
+              <button
+                onClick={() => setShowSendModal(true)}
+                disabled={filteredPresences.length === 0 || !!sendingReportType}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {sendingReportType ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0l-3 3m3-3l-3-3M5 8v8a2 2 0 002 2h10a2 2 0 002-2V8a2 2 0 00-2-2H7a2 2 0 00-2 2z" />
+                  </svg>
+                )}
+                <span>{sendingReportType ? 'Envoi...' : 'Envoyer par email'}</span>
+              </button>
             </div>
           </div>
+          {sendFeedback && (
+            <div
+              className={`mt-4 rounded-xl px-4 py-3 border text-sm font-medium ${
+                sendFeedback.type === 'success'
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}
+            >
+              {sendFeedback.message}
+            </div>
+          )}
           <div className="flex items-center space-x-4">
             <span className="text-sm font-semibold text-slate-700">Filtrer par statut:</span>
             <div className="flex space-x-2">
@@ -468,6 +553,53 @@ export default function Presence() {
           </div>
         )}
       </div>
+      {showSendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Envoyer par email</h3>
+            <p className="text-slate-600 mb-6">
+              Choisissez le rapport à envoyer par email.
+            </p>
+            <div className="space-y-3 mb-6">
+              {Object.entries(reportEndpoints).map(([type, config]) => (
+                <button
+                  key={type}
+                  onClick={() => handleSendReportEmail(type)}
+                  disabled={!!sendingReportType}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-colors ${
+                    type === 'day'
+                      ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
+                      : type === 'week'
+                      ? 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100'
+                      : 'border-purple-200 bg-purple-50 hover:bg-purple-100'
+                  } ${sendingReportType ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{config.label}</p>
+                    <p className="text-xs text-slate-600">{config.description}</p>
+                  </div>
+                  {sendingReportType === type ? (
+                    <div className="w-5 h-5 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => !sendingReportType && setShowSendModal(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                disabled={!!sendingReportType}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
