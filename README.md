@@ -35,6 +35,47 @@ face-attendance-system-Fill-rouge/
 
 Ouvrez les `.puml` avec PlantUML ou VSCode PlantUML pour régénérer les PNG.
 
+### 2.1 Diagramme de classes – structure des données
+![Diagramme de classes](Diagrammes/Diagramme%20de%20classe/image.png)
+
+- **Employe** ↔ **Presence** : relation 1‑N pour historiser chaque pointage avec le fuseau horaire et le statut (present, late, out_of_hours).
+- **FaceTemplate** : stocke le vecteur d’encodage Facenet + chemin du fichier, relié à Employe pour accélérer la comparaison.
+- **Admin/User** : acteurs authentifiés qui gèrent les employés, déclenchent l’entraînement et consultent les rapports.
+- **Report / EmailJob** (selon migrations) : objets dérivés pour suivre les exports générés et les envois automatiques.
+
+Ce diagramme aligne parfaitement les modèles SQLAlchemy (`backend/app/models/*.py`) avec le schéma MySQL provisionné au démarrage.
+
+### 2.2 Diagrammes de cas d’usage – interactions
+![Diagramme de cas d’usage](Diagrammes/Diagramme%20de%20use%20cas/image.png)
+
+Principaux acteurs :
+1. **Employé** : peut s’authentifier, pointer entrée/sortie, lancer l’entraînement de son visage sous supervision.
+2. **Administrateur RH** : crée des comptes, valide les captures, exporte/partage les rapports quotidiens/hebdo/mensuels.
+3. **Système externe (SMTP/MySQL)** : reçoit les demandes d’envoi de mails et stocke les données.
+
+Chaque cas d’usage renvoie vers un écran React correspondant (Login, Presence, TrainFace) et une route FastAPI dédiée (`/api/presence`, `/api/reports`, etc.).
+
+### 2.3 Diagrammes de séquence – flux de bout en bout
+Exemples disponibles dans `Diagrammes/diagramme de sequince/` :
+
+- **Pointage d’entrée** (`checkin_sequence.puml`) : capture webcam → upload → calcul Facenet → persist → retour UI (badge vert/rouge).
+- **Pointage de sortie** (`checkout_sequence.puml`) : similaire mais déclenche `record_check_out` + email de confirmation optionnel.
+- **Entraînement visage** (`training_sequence.puml`) : la SPA capture 20 frames → FastAPI les stocke → pipeline Facenet génère un encodage → MySQL sauvegarde.
+
+Ces séquences servent à expliquer le comportement temps réel aux équipes produit ou aux nouveaux développeurs.
+
+### 2.4 Régénérer ou modifier les diagrammes
+
+1. Installer PlantUML et Java (ou utiliser l’extension VSCode PlantUML).
+2. Depuis la racine du repo :
+   ```powershell
+   java -jar plantuml.jar Diagrammes/**/**/*.puml
+   ```
+   ou, dans VSCode, ouvrir le `.puml` puis `Alt+D` pour prévisualiser.
+3. Les PNG sont exportés à côté des sources ; committez les deux fichiers pour garder l’historique.
+
+Pensez à mettre à jour les diagrammes après toute évolution de modèle (nouvelle table SQL, nouveau flow métier) pour garder la documentation vivante.
+
 ---
 
 ## 3. Architecture applicative
