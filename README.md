@@ -72,7 +72,6 @@ Ces séquences servent à expliquer le comportement temps réel aux équipes pro
    java -jar plantuml.jar Diagrammes/**/**/*.puml
    ```
    ou, dans VSCode, ouvrir le `.puml` puis `Alt+D` pour prévisualiser.
-3. Les PNG sont exportés à côté des sources ; committez les deux fichiers pour garder l’historique.
 
 Pensez à mettre à jour les diagrammes après toute évolution de modèle (nouvelle table SQL, nouveau flow métier) pour garder la documentation vivante.
 
@@ -88,16 +87,83 @@ Pensez à mettre à jour les diagrammes après toute évolution de modèle (nouv
 | **Base de données** | MySQL 8 | Stocke employés, présences, templates faciaux, tokens rafraîchissement |
 | **Conteneurisation** | Docker Compose v2 | Services `backend`, `frontend`, `db`, `phpmyadmin` |
 
+### 3.1 Diagramme d’architecture (vue haute)
+
+```mermaid
+graph LR
+    subgraph Frontend [SPA React/Vite]
+        UI[Caméra & UI Presence]
+        Auth[Service Auth]
+        ReportsUI[Module Rapports]
+    end
+
+    subgraph Backend [API FastAPI]
+        AuthAPI[/Auth & JWT/]
+        PresenceAPI[/Routes /api/presence/]
+        ReportsAPI[/Routes /api/reports/]
+        Tasks[APScheduler + Jobs email]
+    end
+
+    subgraph Services
+        DB[(MySQL 8)]
+        Storage[(storage/\*)]
+        SMTP[(Serveur SMTP)]
+    end
+
+    UI -->|captures| PresenceAPI
+    Auth --> AuthAPI
+    ReportsUI --> ReportsAPI
+    PresenceAPI -->|embeddings| Storage
+    PresenceAPI --> DB
+    ReportsAPI --> Storage
+    ReportsAPI --> SMTP
+    Tasks --> SMTP
+```
+
+Cette vue illustre les interactions principales : la SPA collecte les images webcam et appelle FastAPI ; l’API déclenche Facenet/DeepFace pour comparer les embeddings, persiste les présences dans MySQL et archive les rapports dans `storage/`. Les jobs (APScheduler) s’appuient sur les mêmes modules pour envoyer des e-mails planifiés.
+
+### 3.2 Cycle de vie de l’application (séquence)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Emp as Employé (Navigateur)
+    participant FE as Frontend (Vite)
+    participant BE as Backend (FastAPI)
+    participant CV as Facenet Service
+    participant DB as MySQL
+    participant RP as Reporting/SMTP
+
+    Emp->>FE: Capture webcam & clic "Pointer"
+    FE->>BE: POST /api/presence/check-in (image + token)
+    BE->>CV: Calcul embedding Facenet
+    CV-->>BE: Vecteur 128D + score
+    BE->>DB: Upsert présence (statut, horaires)
+    BE-->>FE: Réponse JSON (statut + message)
+    FE-->>Emp: Feedback UI, badge vert/rouge
+    loop En fin de journée / à la demande
+        Emp->>FE: Demande rapport (jour/semaine/mois)
+        FE->>BE: POST /api/reports/email
+        BE->>RP: Génération PDF + envoi SMTP
+        RP-->>BE: Confirmation envoi
+        BE-->>FE: Statut "email envoyé"
+    end
+```
+
+Ce cycle montre comment un employé traverse l’expérience complète : capture locale, appel API sécurisé, traitement Facenet, persistance MySQL, puis génération/partage des rapports. Les mêmes étapes s’appliquent pour le pointage de sortie (avec la route `check-out`), garantissant un suivi continu du temps de présence.
+
 ---
 
 ## 4. Pipeline Facenet dans le projet
 
 1. **Capture caméra** (frontend `Entree.jsx` / `Sortie.jsx`) → envoi d’une image `multipart/form-data`.
+
 2. **Traitement API** (`backend/app/api/routes/presence.py`) :
    - Sauvegarde temporaire.
    - Appel `DeepFace.represent(..., model_name="Facenet")`.
    - Chargement des encodages existants (`FaceTemplate.encoding_path`).
    - Similarité cosinus et seuil `0.70`.
+
 3. **Résultat** :
    - Si match : appel `record_check_in` ou `record_check_out` (statut `present/late/out_of_hours`).
    - Si échec : message explicite + score.
