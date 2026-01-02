@@ -13,6 +13,7 @@ pydantic[email]==2.8.2
 # ==== Security & Auth ====
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+argon2-cffi==23.1.0
 
 # ==== Multipart / File Upload ====
 python-multipart==0.0.9
@@ -20,6 +21,10 @@ python-multipart==0.0.9
 # ==== IA / Computer Vision ====
 opencv-python==4.10.0.84
 face-recognition==1.3.0
+deepface==0.0.92
+mtcnn==0.1.1
+tensorflow==2.15.1
+tf-keras==2.15.1
 
 # ==== JSON performance ====
 orjson==3.10.7
