@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   db:
     image: mysql:8.0
@@ -27,9 +29,7 @@ services:
       - db
 
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: saidouchrif/facepresence-backend:1.0
     container_name: fastapi_backend
     restart: unless-stopped
     env_file:
@@ -39,23 +39,16 @@ services:
     depends_on:
       - db
     volumes:
-      - ./backend/app:/app/app
       - ./backend/storage:/app/storage
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    image: saidouchrif/facepresence-frontend:1.0
     container_name: react_frontend
     restart: unless-stopped
     ports:
       - "5173:5173"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
 
 volumes:
   mysql_data:
-  frontend_node_modules:
