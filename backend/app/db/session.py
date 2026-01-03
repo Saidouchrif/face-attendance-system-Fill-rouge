@@ -12,15 +12,21 @@ def is_docker():
         return False
 
 db_host = "db" if is_docker() else "127.0.0.1"
+env_database_url = os.getenv("DATABASE_URL")
 
 # Main URL (with DB)
-DATABASE_URL = f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/gestion_presence"
-
-# URL WITHOUT database (for creation)
-DATABASE_URL_NO_DB = f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/"
+if env_database_url:
+    DATABASE_URL = env_database_url
+    DATABASE_URL_NO_DB = None
+else:
+    DATABASE_URL = f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/gestion_presence"
+    # URL WITHOUT database (for creation)
+    DATABASE_URL_NO_DB = f"mysql+pymysql://gp_user:gp_password@{db_host}:3306/"
 
 # Create DB if not exists
 def create_database_if_not_exists():
+    if DATABASE_URL_NO_DB is None:
+        return
     print("🔎 Vérification de la base...")
 
     temp_engine = create_engine(

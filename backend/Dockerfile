@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# System deps for opencv/deepface + build wheels
+# System deps for opencv / deepface
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
@@ -20,13 +20,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # install deps
-COPY backend/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r /app/requirements.txt
 
-# copy app + storage
-COPY backend/app /app/app
-COPY backend/storage /app/storage
+# copy app
+COPY app /app/app
+COPY storage /app/storage
 
 EXPOSE 8000
 

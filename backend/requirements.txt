@@ -35,3 +35,5 @@ APScheduler==3.10.4
 # ==== Reporting & Data ====
 reportlab==4.2.0
 pandas==2.2.3
+
+psycopg2-binary
