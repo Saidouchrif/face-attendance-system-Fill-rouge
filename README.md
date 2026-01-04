@@ -88,6 +88,17 @@ Illustrations (placeholders) :
 
 ![Backend Docker Image](docs/images/backend-docker.png)
 
+Captures des services :
+
+- **Service Backend**  
+  ![Service Backend](Deployement/images/back-end/image_service.png)
+
+- **Service Frontend**  
+  ![Service Frontend](Deployement/images/front-end/service-frontend.png)
+
+- **Service Base de données**  
+  ![Service Database](Deployement/images/base/service_database.png)
+
 ---
 
 ## Technologies utilisées
