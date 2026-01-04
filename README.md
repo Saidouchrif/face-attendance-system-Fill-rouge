@@ -99,6 +99,9 @@ Captures des services :
 - **Service Base de données**  
   ![Service Database](Deployement/images/base/service_database.png)
 
+- **Interface web (Frontend)**  
+  ![Interface Web](Deployement/images/front-end/interface.png)
+
 ---
 
 ## Technologies utilisées
