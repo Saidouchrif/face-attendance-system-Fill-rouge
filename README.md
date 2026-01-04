@@ -4,6 +4,120 @@ Plateforme de pointage automatique des employés combinant FastAPI, React/Vite e
 
 ---
 
+## FacePresence – Présentation générale du projet
+
+- **Nom du projet** : _FacePresence_
+- **Objectif** : proposer une application web de pointage par reconnaissance faciale permettant :
+  - l’enregistrement automatisé des entrées et sorties des employés ;
+  - la gestion centralisée des employés et des administrateurs ;
+  - le pilotage de l’entraînement et de la reconnaissance faciale depuis une interface unique.
+
+---
+
+## Architecture globale (Microservices)
+
+### 🔹 Frontend
+- **Stack** : React + Tailwind CSS (Vite).
+- **Fonctionnalités clés** :
+  - accès à la webcam via `getUserMedia` ;
+  - capture d’images puis envoi sécurisé vers le backend ;
+  - interface administrateur complète (login, gestion employés, suivi des présences, module d’entraînement facial).
+
+### 🔹 Backend (API principale)
+- **Stack** : FastAPI (Python) avec SQLAlchemy.
+- **Responsabilités** :
+  - authentification administrateur via JWT ;
+  - gestion CRUD des employés et des présences (check-in / check-out) ;
+  - orchestration des sessions d’entraînement ;
+  - communication synchrone avec le service IA pour la détection/reconnaissance.
+
+### 🔹 Service IA (Reconnaissance faciale)
+- **Stack** : DeepFace + TensorFlow (CPU) embarquant le modèle Facenet.
+- **Rôle** :
+  - entraînement et génération des embeddings faciaux ;
+  - comparaison en temps réel pour valider les présences ;
+  - modèle Facenet et poids déjà inclus dans l’image Docker dédiée.
+
+### 🔹 Base de données
+- **Technologie** : PostgreSQL (ciblée pour la version microservices).
+- **Contenu** :
+  - stockage des administrateurs, employés, présences ;
+  - suivi de l’état d’entraînement facial : `has_face_profile`, `face_samples_count`, `last_face_training_at`.
+
+---
+
+## Diagramme UML – Communication des services
+
+```mermaid
+sequenceDiagram
+    participant Frontend
+    participant Backend
+    participant AI_Service
+    participant Database
+
+    Frontend->>Backend: Login / API Requests
+    Backend->>Database: Read / Write (Admins, Employés, Présences)
+    Backend->>AI_Service: Training / Recognition Request
+    AI_Service-->>Backend: Recognition Result
+    Backend-->>Frontend: Response JSON
+```
+
+Ce diagramme met en évidence la chaîne d’appel principale : le frontend sécurise les demandes des utilisateurs, le backend gère l’authentification et la persistance PostgreSQL, puis délègue la reconnaissance faciale au service IA basé sur DeepFace/Facenet.
+
+---
+
+## Docker & Déploiement
+
+- Utilisation d’images Docker distinctes pour chaque service (frontend, backend, base PostgreSQL, service IA).
+- **Images officielles** :
+  - Backend : `saidouchrif/facepresence-backend:1.9`
+  - Frontend : `saidouchrif/facepresence-backend:1.6`
+- **Image backend** :
+  - inclut TensorFlow CPU, DeepFace et les poids Facenet pour éviter tout téléchargement runtime ;
+  - expose les endpoints FastAPI et les tâches asynchrones liées au training.
+- **Service IA** :
+  - packagé dans un conteneur dédié afin d’isoler les dépendances lourdes (OpenCV, TensorFlow).
+- **Frontend** :
+  - build React/Vite servi via un conteneur Node ou Nginx selon l’environnement.
+- **Base de données** :
+  - PostgreSQL dockerisé avec volume persistant pour les données critiques (admins, employés, présences, états d’entraînement).
+
+Illustrations (placeholders) :
+
+![Docker Architecture](docs/images/docker-architecture.png)
+
+![Backend Docker Image](docs/images/backend-docker.png)
+
+---
+
+## Technologies utilisées
+
+- **Frontend** : React, Vite, Tailwind CSS, getUserMedia.
+- **Backend** : FastAPI, Python, SQLAlchemy, JWT.
+- **IA** : DeepFace, TensorFlow (CPU), modèle Facenet pré-entraîné.
+- **Base de données** : PostgreSQL (avec migration possible depuis MySQL).
+- **DevOps** : Docker, Docker Compose, Docker Hub (registry), Render (hébergement/CI possible).
+
+---
+
+## Objectifs du projet
+
+1. Automatiser le pointage des employés via la reconnaissance faciale.
+2. Éliminer la fraude ou les pointages manuels non autorisés.
+3. Offrir une solution moderne, pilotée par l’IA, simple à déployer.
+4. Garantir la scalabilité et la préparation à un passage en production (multi-sites, montée en charge).
+
+---
+
+## Services déployés (Render)
+
+- **Frontend** : https://facepresence-frontend.onrender.com/  
+  Interface React/Tailwind accessible publiquement pour la capture webcam, le pointage et l’administration.
+- **Backend** : https://facepresence-backend.onrender.com/  
+  API FastAPI exposée avec authentification JWT, gestion des présences et passerelle vers le service IA.
+
+---
+
 ## 1. Structure du dépôt
 
 ```
