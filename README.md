@@ -84,9 +84,9 @@ Ce diagramme met en évidence la chaîne d’appel principale : le frontend séc
 
 Illustrations (placeholders) :
 
-![Docker Architecture](docs/images/docker-architecture.png)
+![Frontend Docker Image](docs/images/saidouchrif/facepresence-backend:1.6)
 
-![Backend Docker Image](docs/images/backend-docker.png)
+![Backend Docker Image](docs/images/saidouchrif/facepresence-backend:1.9)
 
 Captures des services :
 
@@ -94,7 +94,7 @@ Captures des services :
   ![Service Backend](Deployement/images/back-end/image_service.png)
 
 - **Service Frontend**  
-  ![Service Frontend](Deployement/images/front-end/service-frontend.png)
+  ![Service Frontend](Deployement/images/front-end/service-frontend2.png)
 
 - **Service Base de données**  
   ![Service Database](Deployement/images/base/service_database.png)
