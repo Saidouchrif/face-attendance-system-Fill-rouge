@@ -71,7 +71,7 @@ Ce diagramme met en évidence la chaîne d’appel principale : le frontend séc
 - Utilisation d’images Docker distinctes pour chaque service (frontend, backend, base PostgreSQL, service IA).
 - **Images officielles** :
   - Backend : `saidouchrif/facepresence-backend:1.9`
-  - Frontend : `saidouchrif/facepresence-backend:1.6`
+  - Frontend : `saidouchrif/facepresence-frontend:1.6`
 - **Image backend** :
   - inclut TensorFlow CPU, DeepFace et les poids Facenet pour éviter tout téléchargement runtime ;
   - expose les endpoints FastAPI et les tâches asynchrones liées au training.
@@ -82,19 +82,18 @@ Ce diagramme met en évidence la chaîne d’appel principale : le frontend séc
 - **Base de données** :
   - PostgreSQL dockerisé avec volume persistant pour les données critiques (admins, employés, présences, états d’entraînement).
 
-Illustrations (placeholders) :
+Illustrations (images Docker Hub) :
 
-![Frontend Docker Image](docs/images/saidouchrif/facepresence-backend:1.6)
-
-![Backend Docker Image](docs/images/saidouchrif/facepresence-backend:1.9)
+- Frontend : `docker pull saidouchrif/facepresence-frontend:1.6`
+- Backend : `docker pull saidouchrif/facepresence-backend:1.9`
 
 Captures des services :
 
 - **Service Backend**  
   ![Service Backend](Deployement/images/back-end/image_service.png)
 
-- **Service Frontend**  
-  ![Service Frontend](Deployement/images/front-end/service-frontend2.png)
+- [**Service Frontend**](Deployement/images/front-end/service-frontend.png)  
+  ![Service Frontend](Deployement/images/front-end/service-frontend.png)
 
 - **Service Base de données**  
   ![Service Database](Deployement/images/base/service_database.png)
