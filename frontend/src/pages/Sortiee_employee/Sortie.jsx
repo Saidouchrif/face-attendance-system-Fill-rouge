@@ -75,7 +75,7 @@ const Sortie = () => {
       formData.append('image', blob, 'capture.jpg');
       
       // Send to API
-      const response = await fetch('http://localhost:8000/api/presence/check-out', {
+      const response = await fetch('https://facepresence-backend.onrender.com/api/presence/check-out', {
         method: 'POST',
         body: formData,
       });

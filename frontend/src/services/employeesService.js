@@ -1,17 +1,12 @@
 import { getToken } from "./authService";
-
-const API_BASE_URL = "http://localhost:8000";
-
-function getApiUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
+import { apiFetch } from "./apiClient";
 
 // 🟦 Fetch all employees
 export async function fetchEmployees() {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl("/employees/"), {
+  const response = await apiFetch("/employees/", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -29,7 +24,7 @@ export async function downloadEmployeesPdf() {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl("/api/reports/pdf/employees"), {
+  const response = await apiFetch("/api/reports/pdf/employees", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -48,7 +43,7 @@ export async function createEmployee(employeeData) {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl("/employees/"), {
+  const response = await apiFetch("/employees/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,7 +65,7 @@ export async function deleteEmployee(employeeId) {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl(`/employees/${employeeId}`), {
+  const response = await apiFetch(`/employees/${employeeId}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -90,7 +85,7 @@ export async function updateEmployee(employeeId, employeeData) {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl(`/employees/${employeeId}`), {
+  const response = await apiFetch(`/employees/${employeeId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -112,7 +107,7 @@ export async function getEmployeeById(employeeId) {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl(`/employees/${employeeId}`), {
+  const response = await apiFetch(`/employees/${employeeId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -131,7 +126,7 @@ export async function getEmployeeModelInfo(employeeId) {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl(`/api/face/model-info/${employeeId}`), {
+  const response = await apiFetch(`/api/face/model-info/${employeeId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

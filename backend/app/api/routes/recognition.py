@@ -1,10 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 import uuid, os
 import numpy as np
-from deepface import DeepFace
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.core.deps import get_db, get_current_admin
+from app.core.face_model import get_facenet_model, get_deepface_module
 from app.models.face_template import FaceTemplate
 from app.models.employee import Employe
 from app.services.employe_service import get_employee_model_info
@@ -30,12 +30,15 @@ async def recognize_face(image: UploadFile = File(...)):
     with open(img_path, "wb") as f:
         f.write(img_bytes)
 
-    # 2) Extract embedding
+    # 2) Extract embedding using preloaded Facenet model
     try:
+        DeepFace = get_deepface_module()
+        facenet_model = get_facenet_model()
         result = DeepFace.represent(
             img_path=img_path,
             model_name="Facenet",
-            enforce_detection=False
+            enforce_detection=False,
+            model=facenet_model,
         )
         input_embedding = np.array(result[0]["embedding"])
     except Exception as e:

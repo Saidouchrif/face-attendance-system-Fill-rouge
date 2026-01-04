@@ -87,7 +87,7 @@ export default function FacePunch() {
       formData.append("image", blob, "face.jpg");
 
       // Send to backend
-      const response = await fetch("http://localhost:8000/api/recognize-face", {
+      const response = await fetch("https://facepresence-backend.onrender.com/api/recognize-face", {
         method: "POST",
         body: formData,
       });

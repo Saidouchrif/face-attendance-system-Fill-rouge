@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { getToken } from '../../services/authService';
+import { apiFetch } from '../../services/apiClient';
 
 export default function Presence() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function Presence() {
         throw new Error('Token manquant, veuillez vous reconnecter.');
       }
 
-      const response = await fetch('http://localhost:8000/api/presence/list', {
+      const response = await apiFetch('/api/presence/list', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -65,17 +66,17 @@ export default function Presence() {
 
   const reportEndpoints = {
     day: {
-      url: 'http://localhost:8000/api/reports/pdf/day',
+      path: '/api/reports/pdf/day',
       label: 'Rapport journalier',
       description: 'Statistiques et retards du jour',
     },
     week: {
-      url: 'http://localhost:8000/api/reports/pdf/week',
+      path: '/api/reports/pdf/week',
       label: 'Rapport hebdomadaire',
       description: 'Synthèse des 7 derniers jours',
     },
     month: {
-      url: 'http://localhost:8000/api/reports/pdf/month',
+      path: '/api/reports/pdf/month',
       label: 'Rapport mensuel',
       description: 'Analyse complète du mois en cours',
     },
@@ -92,7 +93,7 @@ export default function Presence() {
         throw new Error('Token manquant, veuillez vous reconnecter.');
       }
 
-      const response = await fetch(reportEndpoints[type].url, {
+      const response = await apiFetch(reportEndpoints[type].path, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -159,7 +160,7 @@ export default function Presence() {
         throw new Error('Token manquant, veuillez vous reconnecter.');
       }
 
-      const response = await fetch('http://localhost:8000/api/reports/pdf/presences', {
+      const response = await apiFetch('/api/reports/pdf/presences', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

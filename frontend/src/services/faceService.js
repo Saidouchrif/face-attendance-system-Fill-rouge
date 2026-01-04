@@ -1,17 +1,12 @@
 // src/services/faceService.js
 import { getToken } from "./authService";
-
-const API_BASE_URL = "http://localhost:8000";
-
-function getApiUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
+import { apiFetch } from "./apiClient";
 
 export async function sendTrainingFrame(employeId, imageDataUrl) {
   const token = getToken();
   if (!token) throw new Error("No token available");
 
-  const response = await fetch(getApiUrl("/face/capture-training"), {
+  const response = await apiFetch("/face/capture-training", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

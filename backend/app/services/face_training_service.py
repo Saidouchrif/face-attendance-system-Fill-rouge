@@ -3,7 +3,7 @@ import uuid
 import cv2
 import numpy as np
 from datetime import datetime
-from deepface import DeepFace
+from app.core.face_model import get_facenet_model, get_deepface_module
 from app.models.face_template import FaceTemplate
 from app.models.employee import Employe
 from app.db.session import SessionLocal
@@ -35,10 +35,13 @@ def save_sample(employe_id: int, img_bgr):
 
     # ------------------ 2) Extract embedding ------------------
     try:
+        DeepFace = get_deepface_module()
+        facenet_model = get_facenet_model()
         result = DeepFace.represent(
             img_path=img_path,
             model_name="Facenet",
-            enforce_detection=False
+            enforce_detection=False,
+            model=facenet_model,
         )
         embedding = result[0]["embedding"]
 

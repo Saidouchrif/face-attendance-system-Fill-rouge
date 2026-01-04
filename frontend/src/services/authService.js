@@ -1,23 +1,18 @@
 // AuthService: handles authentication, token storage, and current admin retrieval
+import { apiFetch, buildApiUrl } from "./apiClient";
+import { getToken, saveToken, clearToken } from "./tokenService";
 
-const TOKEN_KEY = 'authToken';
-const REFRESH_TOKEN_KEY = 'refreshToken';
-const ADMIN_KEY = 'currentAdmin';
+const TOKEN_KEY = "authToken";
+const REFRESH_TOKEN_KEY = "refreshToken";
+const ADMIN_KEY = "currentAdmin";
 
-// Adjust if your backend runs on a different origin/port
-const API_BASE_URL = 'http://localhost:8000';
-
-function getApiUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
-
-export async function login(email, password) {
-  const response = await fetch(getApiUrl('/auth/login'), {
-    method: 'POST',
+export async function login(credentials) {
+  const response = await apiFetch("/auth/login", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(credentials),
   });
 
   if (!response.ok) {
@@ -87,13 +82,13 @@ export function clearRefreshToken() {
 export async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
-    throw new Error('No refresh token found');
+    throw new Error("No refresh token found");
   }
 
-  const response = await fetch(getApiUrl('/auth/refresh'), {
-    method: 'POST',
+  const response = await apiFetch("/auth/refresh", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
@@ -140,11 +135,11 @@ export function clearAdmin() {
 export async function getCurrentAdmin() {
   const token = getToken();
   if (!token) {
-    throw new Error('No token found');
+    throw new Error("No token found");
   }
 
-  const response = await fetch(getApiUrl('/admins/me'), {
-    method: 'GET',
+  const response = await apiFetch("/admins/me", {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -170,11 +165,11 @@ export async function getCurrentAdmin() {
 export async function fetchProtectedResource() {
   const token = getToken();
   if (!token) {
-    throw new Error('No token found');
+    throw new Error("No token found");
   }
 
-  const response = await fetch(getApiUrl('/some/protected/resource'), {
-    method: 'GET',
+  const response = await apiFetch("/some/protected/resource", {
+    method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
     },

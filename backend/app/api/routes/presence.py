@@ -2,10 +2,10 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 import uuid, os, cv2, numpy as np
-from deepface import DeepFace
 
 from app.db.session import SessionLocal
 from app.core.deps import get_db
+from app.core.face_model import get_facenet_model, get_deepface_module
 from app.models.presence import Presence
 from app.models.employee import Employe
 from app.models.face_template import FaceTemplate
@@ -37,12 +37,15 @@ async def check_in_with_face(image: UploadFile = File(...)):
         with open(img_path, "wb") as f:
             f.write(img_bytes)
         
-        # 2) Extract embedding from uploaded image
+        # 2) Extract embedding from uploaded image using lazily loaded model
         try:
+            DeepFace = get_deepface_module()
+            facenet_model = get_facenet_model()
             result = DeepFace.represent(
                 img_path=img_path,
                 model_name="Facenet",
-                enforce_detection=False
+                enforce_detection=False,
+                model=facenet_model,
             )
             input_embedding = np.array(result[0]["embedding"])
         except Exception as e:
@@ -158,12 +161,15 @@ async def check_out_with_face(image: UploadFile = File(...)):
         with open(img_path, "wb") as f:
             f.write(img_bytes)
         
-        # 2) Extract embedding
+        # 2) Extract embedding using lazily loaded model
         try:
+            DeepFace = get_deepface_module()
+            facenet_model = get_facenet_model()
             result = DeepFace.represent(
                 img_path=img_path,
                 model_name="Facenet",
-                enforce_detection=False
+                enforce_detection=False,
+                model=facenet_model,
             )
             input_embedding = np.array(result[0]["embedding"])
         except Exception as e:
