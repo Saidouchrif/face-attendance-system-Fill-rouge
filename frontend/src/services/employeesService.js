@@ -82,7 +82,8 @@ export async function deleteEmployee(employeeId) {
     throw new Error(err.detail || "Failed to delete employee");
   }
 
-  return response.json();
+  // DELETE /employees returns 204 No Content, so simply signal success.
+  return true;
 }
 
 // 🟨 Update employee

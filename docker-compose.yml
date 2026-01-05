@@ -29,7 +29,7 @@ services:
       - db
 
   backend:
-    image: saidouchrif/facepresence-backend:1.0
+    image: saidouchrif/facepresence-backend:2.1
     container_name: fastapi_backend
     restart: unless-stopped
     env_file:
@@ -42,7 +42,7 @@ services:
       - ./backend/storage:/app/storage
 
   frontend:
-    image: saidouchrif/facepresence-frontend:1.0
+    image: saidouchrif/facepresence-frontend:2.1
     container_name: react_frontend
     restart: unless-stopped
     ports:

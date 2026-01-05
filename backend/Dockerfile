@@ -1,6 +1,6 @@
 FROM python:3.10-slim
 
-# System deps for opencv/deepface + build wheels
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
@@ -15,18 +15,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
-    TF_USE_LEGACY_KERAS=0
+    TF_USE_LEGACY_KERAS=0 \
+    DEEPFACE_HOME=/root/.deepface
 
 WORKDIR /app
 
-# install deps
-COPY backend/requirements.txt /app/requirements.txt
+# Install Python dependencies
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r /app/requirements.txt
 
-# copy app + storage
-COPY backend/app /app/app
-COPY backend/storage /app/storage
+# Download FaceNet at build time
+RUN python - <<'PY'
+from deepface import DeepFace
+DeepFace.build_model("Facenet")
+print("FaceNet ready")
+PY
+
+# Copy app and storage
+COPY app /app/app
+COPY storage /app/storage
 
 EXPOSE 8000
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchEmployees, downloadEmployeesPdf } from "../../services/employeesService";
+import { fetchEmployees, downloadEmployeesPdf, deleteEmployee } from "../../services/employeesService";
 import * as XLSX from "xlsx";
 
 export default function Employees() {
@@ -141,24 +141,13 @@ export default function Employees() {
 
     setDeleting(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/employees/${selectedEmployee.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete employee');
-      }
-
-      setEmployees(employees.filter(emp => emp.id !== selectedEmployee.id));
+      await deleteEmployee(selectedEmployee.id);
+      setEmployees((prev) => prev.filter((emp) => emp.id !== selectedEmployee.id));
       setShowDeleteModal(false);
       setSelectedEmployee(null);
     } catch (err) {
       console.error('Error deleting employee:', err);
-      alert('Erreur lors de la suppression de l\'employé');
+      alert(err.message || 'Erreur lors de la suppression de l\'employé');
     } finally {
       setDeleting(false);
     }
