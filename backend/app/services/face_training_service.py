@@ -31,6 +31,7 @@ def save_sample(employe_id: int, img_bgr):
     # ------------------ 1) Save image -------------------------
     img_name = f"{uuid.uuid4()}.jpg"
     img_path = os.path.join(employee_dir, img_name)
+    #save image format jpg
     cv2.imwrite(img_path, img_bgr)
 
     # ------------------ 2) Extract embedding ------------------

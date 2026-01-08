@@ -14,9 +14,7 @@ from datetime import timedelta
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-# -----------------------------------
-# 🔐 LOGIN
-# -----------------------------------
+
 @router.post("/login", response_model=Token)
 def login_admin(credentials: LoginRequest, db: Session = Depends(get_db)):
 
@@ -37,9 +35,7 @@ def login_admin(credentials: LoginRequest, db: Session = Depends(get_db)):
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-# -----------------------------------
-# 🆕 CREATE ADMIN
-# -----------------------------------
+
 @router.post("/create-admin", response_model=AdminRead)
 def create_new_admin(admin: AdminCreate, db: Session = Depends(get_db)):
 
@@ -58,9 +54,7 @@ def create_new_admin(admin: AdminCreate, db: Session = Depends(get_db)):
     return new_admin
 
 
-# -----------------------------------
-# 🔄 REFRESH TOKEN
-# -----------------------------------
+
 @router.post("/refresh", response_model=Token)
 def refresh_access_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
     """

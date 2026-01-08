@@ -12,9 +12,13 @@ class CaptureRequest(BaseModel):
 
 @router.post("/capture-training")
 def capture_training(req: CaptureRequest):
+    # Extract base64 image data
     base64_img = req.image.split(",")[1]
+    # Decode base64 to bytes and convert to OpenCV image
     img_bytes = base64.b64decode(base64_img)
+    # Convert bytes to numpy array and decode image
     np_arr = np.frombuffer(img_bytes, np.uint8)
+    # Decode image formt BGR
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
     if img is None:

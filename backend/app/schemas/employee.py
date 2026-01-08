@@ -12,7 +12,6 @@ class EmployeBase(BaseModel):
     date_embauche: date | None = None
 
 class EmployeCreate(BaseModel):
-    # Matricule is optional - will be auto-generated if not provided
     matricule: str | None = None
     first_name: str
     last_name: str

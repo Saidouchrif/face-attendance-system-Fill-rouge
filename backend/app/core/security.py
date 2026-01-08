@@ -5,6 +5,9 @@ from typing import Optional
 from jose import jwt
 from passlib.context import CryptContext
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ---------------- Security config ----------------
 SECRET_KEY = os.getenv("SECRET_KEY", "Saidouchrif12345")
@@ -14,7 +17,7 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 # ---------------- Password hashing engine ----------------
 pwd_context = CryptContext(
-    schemes=["argon2"],     # ⚡ أقوى و بدون مشاكل
+    schemes=["argon2"],     
     deprecated="auto"
 )
 

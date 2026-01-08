@@ -11,3 +11,4 @@ backend/node_modules/
 
 # Build artifacts
 *.log
+.pytest_cache
