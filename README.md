@@ -230,7 +230,11 @@ cd frontend
 npm install
 npm run dev -- --host --port 5173
 ```
-
+#### pyTest
+```powershell
+cd backend
+pytest app/Test
+```
 ---
 
 ## 7. Points clés du code
